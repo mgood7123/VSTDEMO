@@ -1,0 +1,2 @@
+include ':app', ':vst.demo.java', ':vst.demo.java.addons.view', ':VstManager', ':VstManager', ':vstdemojava', ':vstdemojavaaddonsview', ':vstdemojavaclassexecution', ':vstdemojavaclassexecutionaddonsview', ':vstdemojavajni', ':vstdemojavajniaddonsview', ':vstdemojavacpp', ':vstdemojavacppaddonsview', ':vstdemoopengl', ':vstdemoopengladdonscube'
+rootProject.name='VST DEMO'

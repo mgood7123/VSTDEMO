@@ -111,6 +111,9 @@ public class VstManager {
         }
         Class<?> c;
         try {
+            // TODO: we would probably better to hardcode this, to say vst.main
+            //  incase the package id, declared in the build.gradle, differs
+            //  from the actual package of the main java file
             c = vst.context.getClassLoader().loadClass(vst.VST + "." + className);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();

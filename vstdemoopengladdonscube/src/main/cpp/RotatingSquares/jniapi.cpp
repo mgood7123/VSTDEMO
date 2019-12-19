@@ -64,7 +64,7 @@ extern "C" JNIEXPORT void JNICALL Java_vst_demo_opengl_addons_cube_NativeView_na
 }
 
 extern "C" JNIEXPORT void JNICALL Java_vst_demo_opengl_addons_cube_NativeView_nativeSetSurface(JNIEnv* jenv,
-                                                                                          jclass type, jobject surface)
+                                                                                               jobject type, jobject surface)
 {
     LOG_INFO("surface = %p", surface);
     if (surface != nullptr) {

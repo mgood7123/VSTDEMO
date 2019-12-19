@@ -10,7 +10,6 @@ import vst.manager.VST;
 import vst.manager.VstManager;
 
 public class MainActivity extends AppCompatActivity {
-    GLES3JNIView mView = null;
     VstManager vstManager = null;
     VST v = null;
     VST.CLASS c = null;

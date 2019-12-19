@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.vst.demo.opengl.addons.cube">
+    package="vst.demo.opengl.addons.cube">
 
     <application
         android:allowBackup="true"

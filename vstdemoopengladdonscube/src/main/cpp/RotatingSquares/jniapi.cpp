@@ -14,66 +14,66 @@
 // limitations under the License.
 //
 
-#include <stdint.h>
+#include <cstdint>
 #include <jni.h>
 #include <android/native_window.h> // requires ndk r5 or newer
 #include <android/native_window_jni.h> // requires ndk r5 or newer
 
-#include "jniapi.h"
 #include "logger.h"
 #include "renderer.h"
 
 #define LOG_TAG "EglSample"
 
 
-static ANativeWindow *window = 0;
-static Renderer *renderer = 0;
+static ANativeWindow *window = nullptr;
+static Renderer *renderer = nullptr;
 
-extern "C" JNIEXPORT void JNICALL Java_glnative_example_NativeView_nativeOnCreate(JNIEnv* jenv,
+extern "C" JNIEXPORT void JNICALL Java_vst_demo_opengl_addons_cube_NativeView_nativeOnStart(JNIEnv* jenv,
                                                                                        jclass type)
 {
     LOG_INFO("nativeOnStart");
+    LOG_INFO("renderer = %p", renderer);
     renderer = new Renderer();
-    return;
+    LOG_INFO("renderer = %p", renderer);
 }
 
-extern "C" JNIEXPORT void JNICALL Java_glnative_example_NativeView_nativeOnResume(JNIEnv* jenv,
+extern "C" JNIEXPORT void JNICALL Java_vst_demo_opengl_addons_cube_NativeView_nativeOnResume(JNIEnv* jenv,
                                                                                         jclass type)
 {
     LOG_INFO("nativeOnResume");
+    LOG_INFO("renderer = %p", renderer);
     renderer->start();
-    return;
 }
 
-extern "C" JNIEXPORT void JNICALL Java_glnative_example_NativeView_nativeOnPause(JNIEnv* jenv,
+extern "C" JNIEXPORT void JNICALL Java_vst_demo_opengl_addons_cube_NativeView_nativeOnPause(JNIEnv* jenv,
                                                                                        jclass type)
 {
     LOG_INFO("nativeOnPause");
+    LOG_INFO("renderer = %p", renderer);
     renderer->stop();
-    return;
 }
 
-extern "C" JNIEXPORT void JNICALL Java_glnative_example_NativeView_nativeOnStop(JNIEnv* jenv,
+extern "C" JNIEXPORT void JNICALL Java_vst_demo_opengl_addons_cube_NativeView_nativeOnStop(JNIEnv* jenv,
                                                                                       jclass type)
 {
     LOG_INFO("nativeOnStop");
+    LOG_INFO("renderer = %p", renderer);
     delete renderer;
-    renderer = 0;
-    return;
+    renderer = nullptr;
+    LOG_INFO("renderer = %p", renderer);
 }
 
-extern "C" JNIEXPORT void JNICALL Java_glnative_example_NativeView_nativeSetSurface(JNIEnv* jenv,
+extern "C" JNIEXPORT void JNICALL Java_vst_demo_opengl_addons_cube_NativeView_nativeSetSurface(JNIEnv* jenv,
                                                                                           jclass type, jobject surface)
 {
-    if (surface != 0) {
+    LOG_INFO("surface = %p", surface);
+    if (surface != nullptr) {
         window = ANativeWindow_fromSurface(jenv, surface);
         LOG_INFO("Got window %p", window);
+        LOG_INFO("renderer = %p", renderer);
         renderer->setWindow(window);
     } else {
         LOG_INFO("Releasing window");
         ANativeWindow_release(window);
     }
-
-    return;
 }
-

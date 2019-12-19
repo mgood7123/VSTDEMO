@@ -1,4 +1,4 @@
-package com.example.vstmanager;
+package vstmanager;
 
 import org.junit.Test;
 

@@ -1,4 +1,4 @@
-package com.example.vst.demo
+package vst.demo
 
 import org.junit.Test
 

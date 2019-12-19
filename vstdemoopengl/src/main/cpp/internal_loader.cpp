@@ -22,13 +22,46 @@ functionPointerDeclare2(VST_TYPEDEF_RETURN_TYPE, GraphicsResize, int, int);
 functionPointerDeclare0(VST_TYPEDEF_RETURN_TYPE, GraphicsDraw);
 functionPointerDeclare0(VST_TYPEDEF_RETURN_TYPE, GraphicsDestroy);
 
+// https://stackoverflow.com/questions/10324956/how-do-i-import-shared-object-libraries-at-runtime-in-android
+
+/*
+// KGEmain function pointer
+typedef void (*KGEmain) ();
+
+std::string strPluginName = "/data/data/com.kge.android/lib/lib";
+strPluginName += appname;
+strPluginName += ".so";
+
+void* handle = dlopen(strPluginName.c_str(), RTLD_LAZY);
+
+const char* error;
+
+if (!handle)
+{
+    LOGE("can't load the %s plugin. (%s)", strPluginName.c_str(), dlerror());
+    return;
+}
+// Clear any exiting error
+dlerror();
+
+// Load the KGEmain function
+pFn = (KGEmain)dlsym(handle, "KGEmain");
+if ((error = dlerror()) != NULL || !pFn)
+{
+    LOGE("KGEmain function dose not find in %s plugin.\n%s", strPluginName.c_str(), error);
+    return;
+}
+
+pFn();
+ */
+
 const char * VST = "libVSTRotatingSquaresLinux.so";
 
 Monitor<VST_TYPEDEF_RETURN_TYPE *> VST_STATE_MONITOR;
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_example_vst_demo_opengl_graphicsManager_load(JNIEnv *env, jclass type) {
+Java_vst_demo_opengl_graphicsManager_load(JNIEnv *env, jclass type) {
     if (eglGetCurrentContext() != EGL_NO_CONTEXT) {
         LOGV("There is a current context.");
     } else LOGV("There is no current context.");
@@ -108,7 +141,7 @@ Java_com_example_vst_demo_opengl_graphicsManager_load(JNIEnv *env, jclass type) 
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_example_vst_demo_opengl_graphicsManager_create(JNIEnv *env, jclass type) {
+Java_vst_demo_opengl_graphicsManager_create(JNIEnv *env, jclass type) {
     if (VST_API_IMPLEMENTATION == VST_API_IMPLEMENTATION_LINUX) {
         LOGV("%s: create", VST);
         if (GRAPHICSHANDLER != nullptr) {
@@ -120,7 +153,7 @@ Java_com_example_vst_demo_opengl_graphicsManager_create(JNIEnv *env, jclass type
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_example_vst_demo_opengl_graphicsManager_resize(JNIEnv *env, jclass type, jint width, jint height) {
+Java_vst_demo_opengl_graphicsManager_resize(JNIEnv *env, jclass type, jint width, jint height) {
     if (VST_API_IMPLEMENTATION == VST_API_IMPLEMENTATION_LINUX) {
         LOGV("%s: resize", VST);
         if (GRAPHICSHANDLER != nullptr) {
@@ -136,7 +169,7 @@ Java_com_example_vst_demo_opengl_graphicsManager_resize(JNIEnv *env, jclass type
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_example_vst_demo_opengl_graphicsManager_step(JNIEnv *env, jclass type) {
+Java_vst_demo_opengl_graphicsManager_step(JNIEnv *env, jclass type) {
     if (VST_API_IMPLEMENTATION == VST_API_IMPLEMENTATION_LINUX) {
 //    LOGV("%s: draw", VST);
         if (GRAPHICSHANDLER != nullptr) {
@@ -155,7 +188,7 @@ Java_com_example_vst_demo_opengl_graphicsManager_step(JNIEnv *env, jclass type) 
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_example_vst_demo_opengl_graphicsManager_destroy(JNIEnv *env, jclass type) {
+Java_vst_demo_opengl_graphicsManager_destroy(JNIEnv *env, jclass type) {
     if (VST_API_IMPLEMENTATION == VST_API_IMPLEMENTATION_LINUX) {
         LOGV("%s: destroy", VST);
         if (GRAPHICSHANDLER != nullptr) {

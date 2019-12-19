@@ -18,7 +18,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         VstManager vstManager = new VstManager();
-        vstmanager.VST v = vstManager.loadPackage(this, "view");
+        VST v = vstManager.loadPackage(this, "view");
         int id = vstManager.getResourceId(v, "layout", "activity_main");
         View view = vstManager.loadView(v, id);
         if (view != null) {

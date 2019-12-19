@@ -1,4 +1,4 @@
-package liblayout
+package com.example.liblayout
 
 import android.app.Activity
 import android.content.Context
@@ -120,7 +120,7 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
         get() {
             while (this.isNotEmpty()) {
                 Log.e("NU", "executing from queue")
-                this.first()()
+                this.first()() // first().invoke()
                 this.removeAt(0)
                 Log.e("NU", "executed")
             }
@@ -131,6 +131,9 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
     private var invokedFromBuild = false
 
     private var index = 0
+
+    // TODO: NAMED VIEWS, SAVING/RESTORING, MODIFICATION (ADDING/REMOVING ADDITIONAL VIEWS)
+    //  SEE VstManager\src\main\java\vst\manager\VstUi.java FOR SAVING/RESTORING
 
     class Column() {
         var isView = true
@@ -496,6 +499,203 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
     }
 
     fun build() {
+        build(
+            {
+                activity!!.setContentView(it)
+            },
+            {
+                Log.e("runOnUiThread", "adding $it to $view")
+                (view!! as ViewGroup).addView(it)
+                Log.e("runOnUiThread", "added $it to $view")
+            }
+        )
+    }
+
+    fun build(executeOnUiThreadIfActivityOrViewNotNull: (al: AbsoluteLayout) -> Unit) {
+        build(executeOnUiThreadIfActivityOrViewNotNull, executeOnUiThreadIfActivityOrViewNotNull)
+    }
+
+    fun build(executeOnUiThreadIfActivityNotNull: (al: AbsoluteLayout) -> Unit, executeOnUiThreadIfViewNotNull: (al: AbsoluteLayout) -> Unit) {
+        post(executeOnUiThreadIfActivityNotNull, executeOnUiThreadIfViewNotNull)
+        executeInNewThread()
+    }
+
+    /**
+     * builds the [View] that has been constructed by [row] or [column] and returns it
+     *
+     */
+    fun buildReturn(context: Context): AbsoluteLayout? {
+//        val absoluteLayout = AbsoluteLayout(context)
+//        build( { absoluteLayout = it }, { absoluteLayout = it })
+        if (!threaded) {
+            resize()
+            val absoluteLayout = AbsoluteLayout(context)
+            row.forEach {
+                it.column.forEach {
+                    absoluteLayout.addView(
+                        it.view, AbsoluteLayout.LayoutParams(
+                            it.sizeFromLeft,
+                            it.sizeFromTop,
+                            it.distanceFromLeft,
+                            it.distanceFromTop
+                        )
+                    )
+                }
+            }
+            return absoluteLayout
+        } else {
+            var view: AbsoluteLayout? = null
+            queue.add {
+                resize()
+                if (activity != null) {
+                    val absoluteLayout = AbsoluteLayout(activity!!.applicationContext)
+                    row.forEach {
+                        it.column.forEach {
+                            absoluteLayout.addView(
+                                if (it.isView) it.view else it.viewfun!!(),
+                                AbsoluteLayout.LayoutParams(
+                                    it.sizeFromLeft,
+                                    it.sizeFromTop,
+                                    it.distanceFromLeft,
+                                    it.distanceFromTop
+                                )
+                            )
+                        }
+                    }
+                    view = absoluteLayout
+                } else if (view != null) {
+                    val absoluteLayout = AbsoluteLayout(UI!!.context)
+                    Log.e("NU", "row.size = ${row.size}")
+                    row.forEach {
+                        Log.e("NU", "it.column.size = ${it.column.size}")
+                        it.column.forEach {
+                            Log.e("NU", "it.sizeFromLeft = ${it.sizeFromLeft}")
+                            Log.e("NU", "it.sizeFromTop = ${it.sizeFromTop}")
+                            Log.e("NU", "it.distanceFromLeft = ${it.distanceFromLeft}")
+                            Log.e("NU", "it.distanceFromTop = ${it.distanceFromTop}")
+                            absoluteLayout.addView(
+                                it.view, AbsoluteLayout.LayoutParams(
+                                    it.sizeFromLeft,
+                                    it.sizeFromTop,
+                                    it.distanceFromLeft,
+                                    it.distanceFromTop
+                                )
+                            )
+                        }
+                    }
+                    view = absoluteLayout
+                } else throw NullPointerException()
+            }
+            Thread {
+                Looper.prepare()
+                while (activity != null && view != null) {
+                    Log.w(
+                        "AV",
+                        "activity or view is null: activity is $activity and view is $view"
+                    )
+                    Thread.sleep(16)
+                }
+                if (view != null) {
+                    Log.e("P", "view is not null")
+                    if (useParent) {
+                        while (view!!.parent == null) {
+                            Log.w("P", "view!!.parent is null")
+                            Thread.sleep(16)
+                        }
+                        Log.e("P", "parent not null")
+                        while (
+                            (view!!.parent as View).height == 0 && (view!!.parent as View).width == 0
+                        ) {
+                            Log.w(
+                                "P",
+                                "(view!!.parent as view).height is 0 and (view!!.parent as " +
+                                        "View).width is 0"
+                            )
+                            Thread.sleep(16)
+                        }
+                        maxHeight = (view!!.parent as View).height
+                        maxWidth = (view!!.parent as View).width
+                        Log.e(
+                            "M",
+                            "(view!!.parent as View).height = ${(view!!.parent as View).height}"
+                        )
+                        Log.e(
+                            "M",
+                            "(view!!.parent as View).width = ${(view!!.parent as View).width}"
+                        )
+                    } else {
+                        while (view!!.height == 0 && view!!.width == 0) {
+                            Log.w(
+                                "P",
+                                "view!!.height is 0 and view!!.width is 0"
+                            )
+                            Thread.sleep(16)
+                        }
+                        maxHeight = view!!.height
+                        maxWidth = view!!.width
+                        Log.e(
+                            "M",
+                            "view!!.height = ${view!!.height}"
+                        )
+                        Log.e(
+                            "M",
+                            "view!!.width = ${view!!.width}"
+                        )
+                    }
+                } else if (activity != null) {
+                    Log.e("P", "activity is not null")
+                    while (
+                        activityFrameLayout!!.height == 0 && activityFrameLayout!!.width == 0
+                    ) {
+                        Log.w(
+                            "P",
+                            "activityFrameLayout!!.height is 0 and activityFrameLayout!!.width is 0"
+                        )
+                        Thread.sleep(16)
+                    }
+                    maxHeight = activityFrameLayout!!.height
+                    maxWidth = activityFrameLayout!!.width
+                    Log.e(
+                        "M",
+                        "activityFrameLayout!!.height = ${activityFrameLayout!!.height}"
+                    )
+                    Log.e(
+                        "M",
+                        "activityFrameLayout!!.width = ${activityFrameLayout!!.width}"
+                    )
+                }
+                Thread.sleep(16)
+                invokedFromBuild = true
+                queue.executeAll
+            }.also {
+                try {
+                    it.start()
+                    it.join()
+                } catch (e: NullPointerException) {
+                    return null
+                }
+                return view
+            }
+        }
+    }
+
+    fun post(after: (() -> Unit)) {
+        post({}, {}, after)
+    }
+
+    fun post(executeOnUiThreadIfActivityOrViewNotNull: (al: AbsoluteLayout) -> Unit) {
+        post(executeOnUiThreadIfActivityOrViewNotNull, executeOnUiThreadIfActivityOrViewNotNull, {})
+    }
+
+    fun post(executeOnUiThreadIfActivityOrViewNotNull: (al: AbsoluteLayout) -> Unit, after: (() -> Unit)) {
+        post(executeOnUiThreadIfActivityOrViewNotNull, executeOnUiThreadIfActivityOrViewNotNull, after)
+    }
+
+    fun post(executeOnUiThreadIfActivityNotNull: (al: AbsoluteLayout) -> Unit, executeOnUiThreadIfViewNotNull: (al: AbsoluteLayout) -> Unit) {
+        post(executeOnUiThreadIfActivityNotNull, executeOnUiThreadIfViewNotNull, {})
+    }
+
+    fun post(executeOnUiThreadIfActivityNotNull: (al: AbsoluteLayout) -> Unit, executeOnUiThreadIfViewNotNull: (al: AbsoluteLayout) -> Unit, after: (() -> Unit)) {
         queue.add {
             resize()
             if (activity != null) {
@@ -514,7 +714,7 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
                     }
                 }
                 activity!!.runOnUiThread {
-                    activity!!.setContentView(absoluteLayout)
+                    executeOnUiThreadIfActivityNotNull(absoluteLayout)
                 }
             } else if (view != null) {
                 val absoluteLayout = AbsoluteLayout(UI!!.context)
@@ -537,119 +737,100 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
                     }
                 }
                 UI!!.runOnUiThread {
-                    Log.e("runOnUiThread", "adding $absoluteLayout to $view")
-                    (view!! as ViewGroup).addView(absoluteLayout)
-                    Log.e("runOnUiThread", "added $absoluteLayout to $view")
+                    executeOnUiThreadIfViewNotNull(absoluteLayout)
                 }
             } else throw NullPointerException()
+            after()
         }
-        Thread {
-            Looper.prepare()
-            while (activity != null && view != null) {
-                Log.w(
-                    "AV",
-                    "activity or view is null: activity is $activity and view is $view"
-                )
-                Thread.sleep(16)
-            }
-            if (view != null) {
-                Log.e("P", "view is not null")
-                if (useParent) {
-                    while (view!!.parent == null) {
-                        Log.w("P", "view!!.parent is null")
-                        Thread.sleep(16)
-                    }
-                    Log.e("P", "parent not null")
-                    while (
-                        (view!!.parent as View).height == 0 && (view!!.parent as View).width == 0
-                    ) {
-                        Log.w(
-                            "P",
-                            "(view!!.parent as view).height is 0 and (view!!.parent as " +
-                                    "View).width is 0"
-                        )
-                        Thread.sleep(16)
-                    }
-                    maxHeight = (view!!.parent as View).height
-                    maxWidth = (view!!.parent as View).width
-                    Log.e(
-                        "M",
-                        "(view!!.parent as View).height = ${(view!!.parent as View).height}"
-                    )
-                    Log.e(
-                        "M",
-                        "(view!!.parent as View).width = ${(view!!.parent as View).width}"
-                    )
-                } else {
-                    while (view!!.height == 0 && view!!.width == 0) {
-                        Log.w(
-                            "P",
-                            "view!!.height is 0 and view!!.width is 0"
-                        )
-                        Thread.sleep(16)
-                    }
-                    maxHeight = view!!.height
-                    maxWidth = view!!.width
-                    Log.e(
-                        "M",
-                        "view!!.height = ${view!!.height}"
-                    )
-                    Log.e(
-                        "M",
-                        "view!!.width = ${view!!.width}"
-                    )
+    }
+
+    fun execute() {
+        while (activity != null && view != null) {
+            Log.w(
+                "AV",
+                "activity or view is null: activity is $activity and view is $view"
+            )
+            Thread.sleep(16)
+        }
+        if (view != null) {
+            Log.e("P", "view is not null")
+            if (useParent) {
+                while (view!!.parent == null) {
+                    Log.w("P", "view!!.parent is null")
+                    Thread.sleep(16)
                 }
-            } else if (activity != null) {
-                Log.e("P", "activity is not null")
+                Log.e("P", "parent not null")
                 while (
-                    activityFrameLayout!!.height == 0 && activityFrameLayout!!.width == 0
+                    (view!!.parent as View).height == 0 && (view!!.parent as View).width == 0
                 ) {
                     Log.w(
                         "P",
-                        "activityFrameLayout!!.height is 0 and activityFrameLayout!!.width is 0"
+                        "(view!!.parent as view).height is 0 and (view!!.parent as " +
+                                "View).width is 0"
                     )
                     Thread.sleep(16)
                 }
-                maxHeight = activityFrameLayout!!.height
-                maxWidth = activityFrameLayout!!.width
+                maxHeight = (view!!.parent as View).height
+                maxWidth = (view!!.parent as View).width
                 Log.e(
                     "M",
-                    "activityFrameLayout!!.height = ${activityFrameLayout!!.height}"
+                    "(view!!.parent as View).height = ${(view!!.parent as View).height}"
                 )
                 Log.e(
                     "M",
-                    "activityFrameLayout!!.width = ${activityFrameLayout!!.width}"
+                    "(view!!.parent as View).width = ${(view!!.parent as View).width}"
+                )
+            } else {
+                while (view!!.height == 0 && view!!.width == 0) {
+                    Log.w(
+                        "P",
+                        "view!!.height is 0 and view!!.width is 0"
+                    )
+                    Thread.sleep(16)
+                }
+                maxHeight = view!!.height
+                maxWidth = view!!.width
+                Log.e(
+                    "M",
+                    "view!!.height = ${view!!.height}"
+                )
+                Log.e(
+                    "M",
+                    "view!!.width = ${view!!.width}"
                 )
             }
-            Thread.sleep(16)
-            invokedFromBuild = true
-            queue.executeAll
-        }.start()
+        } else if (activity != null) {
+            Log.e("P", "activity is not null")
+            while (
+                activityFrameLayout!!.height == 0 && activityFrameLayout!!.width == 0
+            ) {
+                Log.w(
+                    "P",
+                    "activityFrameLayout!!.height is 0 and activityFrameLayout!!.width is 0"
+                )
+                Thread.sleep(16)
+            }
+            maxHeight = activityFrameLayout!!.height
+            maxWidth = activityFrameLayout!!.width
+            Log.e(
+                "M",
+                "activityFrameLayout!!.height = ${activityFrameLayout!!.height}"
+            )
+            Log.e(
+                "M",
+                "activityFrameLayout!!.width = ${activityFrameLayout!!.width}"
+            )
+        }
+        Thread.sleep(16)
+        invokedFromBuild = true
+        queue.executeAll
     }
 
-    /**
-     * builds the [View] that has been constructed by [row] or [column] and returns it
-     *
-     */
-    @Throws(Exception::class)
-    fun buildReturn(context: Context): AbsoluteLayout {
-        if (!threaded) {
-            resize()
-            val absoluteLayout = AbsoluteLayout(context)
-            row.forEach {
-                it.column.forEach {
-                    absoluteLayout.addView(
-                        it.view, AbsoluteLayout.LayoutParams(
-                            it.sizeFromLeft,
-                            it.sizeFromTop,
-                            it.distanceFromLeft,
-                            it.distanceFromTop
-                        )
-                    )
-                }
-            }
-            return absoluteLayout
-        } else throw Exception("executing this when threading makes no sense")
+    fun executeInNewThread() {
+        Thread {
+            Looper.prepare()
+            execute()
+        }.start()
     }
 
     /**

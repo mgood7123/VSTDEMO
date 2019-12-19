@@ -19,7 +19,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         vstManager = new VstManager();
-        v = vstManager.loadPackage(this, "cube");
+        v = vstManager.loadPackage(this, "cube5");
         c = vstManager.loadClass(v, "main");
         i = vstManager.newInstance(c, "main");
         vstManager.invokeMethod(

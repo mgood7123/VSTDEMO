@@ -5,7 +5,7 @@ buildscript {
     repositories {
         google()
         jcenter()
-        
+
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:3.5.3'
@@ -19,7 +19,31 @@ allprojects {
     repositories {
         google()
         jcenter()
-        
+
+    }
+    tasks.withType(JavaCompile) {
+/*
+        options.compilerArgs <<
+                "-Xlint:all" <<
+                "-Xlint:cast" <<
+                "-Xlint:classfile" <<
+                "-Xlint:deprecation" <<
+                "-Xlint:dep-ann" <<
+                "-Xlint:divzero" <<
+                "-Xlint:empty" <<
+                "-Xlint:fallthrough" <<
+                "-Xlint:finally" <<
+                "-Xlint:options" <<
+                "-Xlint:overrides" <<
+                "-Xlint:path" <<
+                "-Xlint:processing" <<
+                "-Xlint:rawtypes" <<
+                "-Xlint:serial" <<
+                "-Xlint:static" <<
+                "-Xlint:try" <<
+                "-Xlint:unchecked" <<
+                "-Xlint:varargs"
+*/
     }
 }
 

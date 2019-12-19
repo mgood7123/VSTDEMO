@@ -13,7 +13,7 @@ public class VST {
     public Context context = null;
     public static class CLASS {
         String className = null;
-        java.lang.Class CLASS = null;
+        Class<?> CLASS = null;
         public ArrayList<Object> ClassInstances = null;
         public static class Methods {
             String methodName = null;

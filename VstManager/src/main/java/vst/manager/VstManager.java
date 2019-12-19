@@ -73,11 +73,11 @@ public class VstManager {
         if (className == null) throw new IllegalArgumentException("className must not be null");
         try {
             Log.i("VstManager", "loading " + vst.VST + "." + className);
-            Class c = vst.context.getClassLoader().loadClass(vst.VST + "." + className);
+            Class<?> c = vst.context.getClassLoader().loadClass(vst.VST + "." + className);
             try {
                 Log.i("VstManager", "loaded " + vst.VST + "." + className);
                 Log.i("VstManager", "obtaining constructor");
-                Constructor constructor = c.getConstructor(Activity.class);
+                Constructor<?> constructor = c.getConstructor(Activity.class);
                 Log.i("VstManager", "obtained constructor");
                 Log.i("VstManager", "constructing new instance");
                 try {
@@ -109,7 +109,7 @@ public class VstManager {
                     return CLASS;
                 }
         }
-        Class c;
+        Class<?> c;
         try {
             c = vst.context.getClassLoader().loadClass(vst.VST + "." + className);
         } catch (ClassNotFoundException e) {
@@ -144,7 +144,7 @@ public class VstManager {
         return i;
     }
 
-    public Object invokeMethod(VST.CLASS CLASS, Object classInstance, String methodName, Class[] parameterTypes, Object[] parameterValues) throws IllegalArgumentException {
+    public Object invokeMethod(VST.CLASS CLASS, Object classInstance, String methodName, Class<?>[] parameterTypes, Object[] parameterValues) throws IllegalArgumentException {
         if (CLASS == null) throw new IllegalArgumentException("CLASS must not be null");
         if (classInstance == null) throw new IllegalArgumentException("classInstance must not be null");
         if (methodName == null) throw new IllegalArgumentException("methodName must not be null");

@@ -1,4 +1,4 @@
-package liblayout.view
+package com.example.liblayout.view
 
 import android.content.Context
 import android.graphics.Typeface

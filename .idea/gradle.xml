@@ -10,6 +10,7 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/VstManager" />
             <option value="$PROJECT_DIR$/app" />
+            <option value="$PROJECT_DIR$/liblayout" />
             <option value="$PROJECT_DIR$/vst.demo.java" />
             <option value="$PROJECT_DIR$/vst.demo.java.addons.view" />
             <option value="$PROJECT_DIR$/vstdemojava" />
@@ -22,6 +23,7 @@
             <option value="$PROJECT_DIR$/vstdemojavajniaddonsview" />
             <option value="$PROJECT_DIR$/vstdemoopengl" />
             <option value="$PROJECT_DIR$/vstdemoopengladdonscube" />
+            <option value="$PROJECT_DIR$/vstmanagerui" />
           </set>
         </option>
         <option name="resolveModulePerSourceSet" value="false" />

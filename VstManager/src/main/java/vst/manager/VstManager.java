@@ -152,6 +152,10 @@ public class VstManager {
         return i;
     }
 
+    public Object invokeMethod(VST.CLASS CLASS, Object classInstance, String methodName) throws IllegalArgumentException {
+        return invokeMethod(CLASS, classInstance, methodName, null, null);
+    }
+
     public Object invokeMethod(VST.CLASS CLASS, Object classInstance, String methodName, Class<?>[] parameterTypes, Object[] parameterValues) throws IllegalArgumentException {
         if (CLASS == null) throw new IllegalArgumentException("CLASS must not be null");
         if (classInstance == null) throw new IllegalArgumentException("classInstance must not be null");

@@ -33,44 +33,24 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        vstManager.invokeMethod(
-                c, i,
-                "onStart",
-                null,
-                null
-        );
+        vstManager.invokeMethod(c, i, "onStart");
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        vstManager.invokeMethod(
-                c, i,
-                "onResume",
-                null,
-                null
-        );
+        vstManager.invokeMethod(c, i, "onResume");
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        vstManager.invokeMethod(
-                c, i,
-                "onPause",
-                null,
-                null
-        );
+        vstManager.invokeMethod(c, i, "onPause");
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        vstManager.invokeMethod(
-                c, i,
-                "onStop",
-                null,
-                null
-        );
+        vstManager.invokeMethod(c, i, "onStop");
     }
 }

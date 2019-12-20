@@ -27,12 +27,13 @@ public class MainActivity extends AppCompatActivity {
         vst = new VstManager();
         vstUi = new VstUi();
         UI = BuilderKt.Builder(this);
-        UI.row();
+        UI.row("mainButton");
         Button add = new Button(this);
         add.setText("Tap me to add a new VST");
-        add.setOnClickListener(vstUi.vstPickerOnClickListener(this));
-        UI.column(add);
+        add.setOnClickListener(vstUi.vstPickerOnClickListener(this, vst));
+        UI.column("mainButton", add);
         final Activity a = this;
+        UI.buildView();
         UI.post(
                 new Function1<AbsoluteLayout, Unit>() {
                     @Override

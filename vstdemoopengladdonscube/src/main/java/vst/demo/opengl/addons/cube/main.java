@@ -29,6 +29,28 @@ public class main {
         }
     }
 
+    // should can we eliminate activity here?
+    public View onViewRequest(Activity mActivity, Context mContext) {
+        if (context == null) context = mContext;
+
+        if (n == null) n = new NativeView(activity, context);
+
+        Log.i(n.TAG, "onViewRequest(Activity, Context)");
+
+        // build layout
+        RelativeLayout rel = new RelativeLayout(context);
+        rel.addView(n.surfaceView);
+
+        // set text
+        TextView text = new TextView(context);
+        text.setText("Hello World! Try clicking the screen");
+        text.setTextSize(60f);
+        text.setTextColor(Color.WHITE);
+        rel.addView(text);
+
+        return rel;
+    }
+
     public void onCreate(Activity mActivity, Context mContext) {
         if (activity == null) activity = mActivity;
         if (context == null) context = mContext;

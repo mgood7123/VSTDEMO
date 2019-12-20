@@ -1,6 +1,7 @@
 package vst.manager;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,54 +14,35 @@ import com.example.liblayout.Builder;
 import com.example.liblayout.BuilderKt;
 import com.example.liblayout.UiThread;
 
+import java.util.Objects;
 import java.util.Stack;
 
+import kotlin.Pair;
+import kotlin.Triple;
 import kotlin.Unit;
 import kotlin.jvm.functions.Function0;
 import kotlin.jvm.functions.Function1;
+import kotlin.jvm.functions.Function2;
 import vst.manager.Helpers.ViewStack;
 
 public class VstUi {
     public ViewStack viewStack = new ViewStack();
-    Builder UI = null;
+    public Builder UI = null;
 
-    public View.OnClickListener vstPickerOnClickListener(final Activity activity) {
+    public View.OnClickListener vstPickerOnClickListener(final Activity activity, final VstManager vstMan) {
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                vstPicker(activity);
+                vstPicker(activity, vstMan);
             }
         };
     }
 
-    public void vstPicker(final Activity activity) {
-        viewStackSelect(activity);
-//        UiThread ui = new UiThread(activity);
-//        Builder UI = BuilderKt.Builder(ui, viewStack.lastElement());
-//        UI.row();
-//        Button back = new Button(activity);
-//        back.setText("Tap me to go back to the previous VST");
-//        back.setOnClickListener(undoCommitViewOnClickListener(activity));
-//        UI.column(back);
-//        UI.row();
-//        Button add = new Button(activity);
-//        add.setText("Tap me to add a new VST, An Example VST");
-//        add.setOnClickListener(vstPickerOnClickListener(activity));
-//        UI.column(add);
-//        UI.post(
-//                new Function1<AbsoluteLayout, Unit>() {
-//                    @Override
-//                    public Unit invoke(AbsoluteLayout absoluteLayout) {
-//                        // dont catch throws here
-//                        commitView(activity, absoluteLayout);
-//                        return null;
-//                    }
-//                }
-//        );
-//        UI.executeInNewThread();
+    public void vstPicker(final Activity activity, VstManager vstMan) {
+        viewStackSelect(activity, vstMan);
     }
 
-    public void viewStackSelect(final Activity activity) {
+    public void viewStackSelect(final Activity activity, VstManager vstMan) {
         if (!viewStack.empty()) {
             Helpers.PackageManager pm = new Helpers.PackageManager(activity);
             Stack<PackageInfo> a = pm.getPackageInfo(".addons.");
@@ -75,16 +57,19 @@ public class VstUi {
                 UI.column(back);
                 int maxColumns = 4;
                 int index = 0;
-                UI.row();
+                int row = 0;
+                UI.row("VST" + String.valueOf(row));
                 Stack<LinearLayout> linearLayouts = new Stack();
                 for (PackageInfo pkg: a) {
                     if (index == maxColumns) {
-                        UI.row();
+                        row++;
+                        UI.row("VST" + String.valueOf(row));
                     }
                     LinearLayout ll = new LinearLayout(activity);
                     linearLayouts.push(ll);
-                    UI.column(ll);
+                    UI.column("VST" + String.valueOf(index), ll);
                 }
+                UI.buildView();
                 UI.post(
                         new Function1<AbsoluteLayout, Unit>() {
                             @Override
@@ -102,80 +87,80 @@ public class VstUi {
                     Builder INFO = BuilderKt.Builder(ui, ll, false);
                     Button title = new Button(activity);
                     title.setText("VST NAME: " + pkg.packageName);
-                    INFO.row();
+                    INFO.row("TITLE");
                     INFO.height(80);
-                    INFO.column(title);
+                    INFO.column("VST NAME: " + pkg.packageName, title);
                     Button preview = new Button(activity);
                     preview.setText("Load VST");
-                    preview.setOnClickListener(viewStackSelectOnClickListener(activity, a));
-                    INFO.row();
-                    INFO.column(preview);
+                    preview.setOnClickListener(viewStackSelectOnClickListenerLoadVST(activity, a, INFO, pkg.packageName, vstMan));
+                    INFO.row("PREVIEW");
+                    INFO.column("VST NAME: " + pkg.packageName, preview);
                     INFO.build();
                 }
             }
         }
     }
 
-    public View.OnClickListener viewStackSelectOnClickListener(final Activity activity, final Stack<PackageInfo> a) {
+    public View.OnClickListener viewStackSelectOnClickListenerLoadVST(final Activity activity, final Stack<PackageInfo> a, final Builder INFO, final String CLICKED_VST, final VstManager vstMan) {
         return new View.OnClickListener() {
             @Override
             public void onClick(final View v) {
-                if (!viewStack.empty()) {
-                    if (a != null) {
-                        UiThread ui = new UiThread(activity);
-                        Builder UI = BuilderKt.Builder(ui, v, false);
-                        UI.row();
-                        UI.height(80);
-                        Button back = new Button(activity);
-                        back.setText("Tap me to go back to the previous VST");
-                        back.setOnClickListener(undoCommitViewOnClickListener(activity));
-                        UI.column(back);
-                        int maxColumns = 4;
-                        int index = 0;
-                        UI.row();
-                        Stack<LinearLayout> linearLayouts = new Stack();
-                        for (PackageInfo pkg: a) {
-                            if (index == maxColumns) {
-                                UI.row();
-                            }
-                            LinearLayout ll = new LinearLayout(activity);
-                            linearLayouts.push(ll);
-                            UI.column(ll);
+                UiThread ui = new UiThread(activity);
+                final Builder UI = BuilderKt.Builder(ui, v, false);
+                UI.setMaxHeight(1);
+                UI.setMaxWidth(1);
+                UI.row();
+//                UI.height(80);
+                UI.column(
+                    new Function1<Object, View>() {
+                        @Override
+                        public View invoke(Object data) {
+                            Triple<Activity, String, VstManager> p = (Triple<Activity, String, VstManager>) data;
+                            VstManager vstManager = p.component3();
+                            VST v = vstManager.loadPackage(p.component1(), CLICKED_VST, false);
+                            VST.CLASS c = vstManager.loadClass(v, "main");
+                            Object i = vstManager.newInstance(c, "main");
+                            Object r = vstManager.invokeMethod(
+                                    c, i,
+                                    "onViewRequest",
+                                    new Class[] { Activity.class, Context.class},
+                                    new Object[] { v.activity, v.activityApplicationContext }
+                            );
+                            vstManager.invokeMethod(
+                                    c, i,
+                                    "onStart",
+                                    null,
+                                    null
+                            );
+                            vstManager.invokeMethod(
+                                    c, i,
+                                    "onResume",
+                                    null,
+                                    null
+                            );
+                            return (View) r;
                         }
-                        UI.post(
-                                new Function1<AbsoluteLayout, Unit>() {
-                                    @Override
-                                    public Unit invoke(AbsoluteLayout absoluteLayout) {
-                                        // dont catch throws here
-                                        commitView(activity, absoluteLayout);
-                                        return null;
-                                    }
-                                }
-                        );
-                        UI.executeInNewThread();
-                        for (int i = 0, linearLayoutsSize = linearLayouts.size(); i < linearLayoutsSize; i++) {
-                            LinearLayout ll = linearLayouts.get(i);
-                            PackageInfo pkg = a.get(i);
-                            Builder INFO = BuilderKt.Builder(ui, ll, false);
-                            Button title = new Button(activity);
-                            title.setText("VST NAME: " + pkg.packageName);
-                            INFO.row();
-                            INFO.height(80);
-                            INFO.column(title);
-                            Button preview = new Button(activity);
-                            preview.setText("Load VST");
-                            INFO.row();
-                            INFO.column(preview);
-                            INFO.build();
-                        }
-                    }
-//                    vg.addView(new android.widget.CheckBox(activity));
-//                    ViewGroup vgp = (ViewGroup) v.getParent();
-//                    View c = ((ViewGroup) v).getChildAt(0);
-//                    ((ViewGroup) v).removeView(c);
-//                    vgp.removeView(v);
-//                    vgp.addView(c);
-                }
+                    }, new Triple(activity, CLICKED_VST, vstMan)
+                );
+//                UI.row();
+//                UI.height(20);
+//                Button unload = new Button(activity);
+//                unload.setText("Unload VST");
+//                UI.column(unload);
+                View x = UI.buildReturn(activity);
+//                unload.setOnClickListener(viewStackSelectOnClickListenerUnloadVST(activity, a, INFO, CLICKED_VST, x, v));
+                INFO.replaceView(v, x);
+                return;
+            }
+        };
+    }
+
+    public View.OnClickListener viewStackSelectOnClickListenerUnloadVST(final Activity activity, final Stack<PackageInfo> a, final Builder INFO, final String CLICKED_VST, final View viewToRestore, final View originalClickedView) {
+        return new View.OnClickListener() {
+            @Override
+            public void onClick(final View v) {
+                undoCommitView(activity);
+                return;
             }
         };
     }

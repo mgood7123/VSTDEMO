@@ -15,13 +15,17 @@ public class VstManager {
 
     private String ADDONS = ".addons.";
 
-    public VST loadPackage(Activity activity, String vstName) throws IllegalArgumentException {
+    public VST loadPackage(Activity activity, String vstName, Boolean vstNameIsRelativeToActiveApplicationPackageName) throws IllegalArgumentException {
         if (activity == null) throw new IllegalArgumentException("activity must not be null");
         if (vstName == null) throw new IllegalArgumentException("vstName must not be null");
         VST vst = new VST();
         vst.activity = activity;
         vst.activityApplicationContext = vst.activity.getApplicationContext();
-        vst.VST = vst.activityApplicationContext.getPackageName() + ADDONS + vstName;
+        if (vstNameIsRelativeToActiveApplicationPackageName)
+            vst.VST = vst.activityApplicationContext.getPackageName() + ADDONS + vstName;
+        else
+            vst.VST = vstName;
+        Log.i("VSTMANAGER", "attempting to load package: " + vst.VST);
         try {
             vst.context = vst.activityApplicationContext.createPackageContext(
                     vst.VST,
@@ -114,6 +118,7 @@ public class VstManager {
             // TODO: we would probably better to hardcode this, to say vst.main
             //  incase the package id, declared in the build.gradle, differs
             //  from the actual package of the main java file
+            //  for example, package id: a.b, package main: a.b.c
             c = vst.context.getClassLoader().loadClass(vst.VST + "." + className);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();

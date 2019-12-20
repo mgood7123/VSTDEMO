@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.widget.AbsoluteLayout
 import android.widget.FrameLayout
+import androidx.core.view.contains
 import java.lang.IllegalArgumentException
 
 /**
@@ -116,6 +117,8 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
     var UI: UiThread? = null
     var useParent = true
 
+    private val lastBuildSaved: MutableList<Unit> = mutableListOf()
+
     private val MutableList<() -> Unit>.executeAll: Unit
         get() {
             while (this.isNotEmpty()) {
@@ -136,8 +139,11 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
     //  SEE VstManager\src\main\java\vst\manager\VstUi.java FOR SAVING/RESTORING
 
     class Column() {
+        var name = "untitled"
         var isView = true
         var viewfun: (() -> View)? = null
+        var viewfun1: ((Any?) -> View)? = null
+        var data: Any? = null
         var view: View? = null
         var sizeFromTop = 0
         var sizeFromLeft = 0
@@ -147,6 +153,7 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
     }
 
     class Row() {
+        var name = "untitled"
         val column = mutableListOf<Column>()
         var customHeight = false
         var percentage = 0.0
@@ -155,8 +162,8 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
     private val row = mutableListOf<Row>()
 
 
-    var currentRow: Row? = null;
-    var currentColumn: Column? = null;
+    var currentRow: Row? = null
+    var currentColumn: Column? = null
 
     /**
      * appends a new column to the specified row index
@@ -213,14 +220,124 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
 
     /**
      * appends a new column to the specified row index
-     * 
-     * [Builder.currentColumn] and [Builder.currentRow] CANNOT be used as parameters to a custom [View]'s function 
-     * parameters: 
-     * 
+     *
+     * this version takes a function instead of a direct [View]
+     *
+     * this is useful if you intend to use [Builder.currentColumn] or [Builder.currentRow],
+     * or the same [View] is intended to be used in multiple [columns][column], allowing you to avoid
+     * rebuilding the [View] for each [column] manually, eliminating duplicate code
+     *
+     * since a [View] cannot have more than one [parent][View.getParent], it needs to be reconstructed for each a.view
+     * that it wants to be attached to
+     *
+     * throws [ArrayIndexOutOfBoundsException] if the row is
+     * [empty][MutableList.isEmpty] or [rowIndex] is greater than or equal to
+     * [row.size][MutableList.size]
+     *
+     * @param rowIndex the row number
+     * @param view a function that returns a [View]
+     */
+    @Throws(ArrayIndexOutOfBoundsException::class)
+    private fun column_(rowIndex: Int, view: (Any?) -> View, data: Any?): Builder {
+        if (!threaded || !addToQueue) {
+            if (row.isEmpty() && row.size >= rowIndex) throw ArrayIndexOutOfBoundsException()
+            else {
+                currentColumn = Column()
+                currentColumn!!.viewfun1 = view
+                currentColumn!!.data = data
+                currentColumn!!.isView = false
+                val c = currentColumn!!
+                c.sizeFromTop = maxHeight!!
+                c.sizeFromLeft = maxWidth!!
+                c.cellId = index++
+                row[rowIndex].column.add(c)
+            }
+        } else {
+            Log.e("NU", "added column to queue")
+            queue.add {
+                if (row.isEmpty() && row.size >= rowIndex)
+                    throw ArrayIndexOutOfBoundsException()
+                else {
+                    currentColumn = Column()
+                    currentColumn!!.data = data
+                    currentColumn!!.viewfun1 = view
+                    currentColumn!!.isView = false
+                    val c = currentColumn!!
+                    c.sizeFromTop = maxHeight!!
+                    c.sizeFromLeft = maxWidth!!
+                    c.cellId = index++
+                    row[rowIndex].column.add(c)
+                }
+            }
+        }
+        return this
+    }
+
+    /**
+     * appends a new column to the specified row index
+     *
+     * this version takes a function instead of a direct [View]
+     *
+     * this is useful if you intend to use [Builder.currentColumn] or [Builder.currentRow],
+     * or the same [View] is intended to be used in multiple [columns][column], allowing you to avoid
+     * rebuilding the [View] for each [column] manually, eliminating duplicate code
+     *
+     * since a [View] cannot have more than one [parent][View.getParent], it needs to be reconstructed for each a.view
+     * that it wants to be attached to
+     *
+     * throws [ArrayIndexOutOfBoundsException] if the row is
+     * [empty][MutableList.isEmpty] or [rowIndex] is greater than or equal to
+     * [row.size][MutableList.size]
+     *
+     * @param rowIndex the row number
+     * @param view a function that returns a [View]
+     */
+    @Throws(ArrayIndexOutOfBoundsException::class)
+    private fun column_(name: String, rowIndex: Int, view: () -> View): Builder {
+        if (!threaded || !addToQueue) {
+            if (row.isEmpty() && row.size >= rowIndex) throw ArrayIndexOutOfBoundsException()
+            else {
+                currentColumn = Column()
+                currentColumn!!.viewfun = view
+                currentColumn!!.isView = false
+                val c = currentColumn!!
+                c.name = name
+                c.sizeFromTop = maxHeight!!
+                c.sizeFromLeft = maxWidth!!
+                c.cellId = index++
+                row[rowIndex].column.add(c)
+            }
+        } else {
+            Log.e("NU", "added column to queue")
+            queue.add {
+                if (row.isEmpty() && row.size >= rowIndex)
+                    throw ArrayIndexOutOfBoundsException()
+                else {
+                    currentColumn = Column()
+                    currentColumn!!.viewfun = view
+                    currentColumn!!.isView = false
+                    val c = currentColumn!!
+                    c.name = name
+                    c.sizeFromTop = maxHeight!!
+                    c.sizeFromLeft = maxWidth!!
+                    c.cellId = index++
+                    row[rowIndex].column.add(c)
+                }
+            }
+        }
+        return this
+    }
+
+    /**
+     * appends a new column to the specified row index
+     *
+     * [Builder.currentColumn] and [Builder.currentRow] CANNOT be used as parameters to a custom [View]'s function
+     * parameters:
+     *
      * ```
      * val build = Builder(activity)
      * build.column(
-     *     1, 
+     *     1,
      *     myCustomView(
      *         // build.currentColumn WILL return null
      *         height = build.currentColumn!!.sizeFromTop,
@@ -270,6 +387,66 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
     }
 
     /**
+     * appends a new column to the specified row index
+     *
+     * [Builder.currentColumn] and [Builder.currentRow] CANNOT be used as parameters to a custom [View]'s function
+     * parameters:
+     *
+     * ```
+     * val build = Builder(activity)
+     * build.column(
+     *     1,
+     *     myCustomView(
+     *         // build.currentColumn WILL return null
+     *         height = build.currentColumn!!.sizeFromTop,
+     *         // build.currentColumn WILL return null
+     *         width = build.currentColumn!!.sizeFromLeft
+     *     )
+     * ).build()
+     * ```
+     *
+     * throws [ArrayIndexOutOfBoundsException] if the row is
+     * [empty][MutableList.isEmpty] or [rowIndex] is greater than or equal to
+     * [row.size][MutableList.size]
+     *
+     * @param rowIndex the row number
+     * @param view the [a.view][View] to attach to this column
+     */
+    @Throws(ArrayIndexOutOfBoundsException::class)
+    fun column(name: String, rowIndex: Int, view: View): Builder {
+        if (!threaded || !addToQueue) {
+            if (row.isEmpty() && row.size >= rowIndex) throw ArrayIndexOutOfBoundsException()
+            else {
+                currentColumn = Column()
+                val c = currentColumn!!
+                c.name = name
+                c.sizeFromTop = maxHeight!!
+                c.sizeFromLeft = maxWidth!!
+                currentColumn!!.view = view
+                c.cellId = index++
+                row[rowIndex].column.add(c)
+            }
+        } else {
+            Log.e("NU", "added column to queue")
+            queue.add {
+                if (row.isEmpty() && row.size >= rowIndex)
+                    throw ArrayIndexOutOfBoundsException()
+                else {
+                    currentColumn = Column()
+                    val c = currentColumn!!
+                    c.name = name
+                    c.sizeFromTop = maxHeight!!
+                    c.sizeFromLeft = maxWidth!!
+                    currentColumn!!.view = view
+                    c.cellId = index++
+                    row[rowIndex].column.add(c)
+                }
+            }
+        }
+        return this
+    }
+
+    /**
      * appends a new [column][column_] to the specified row index
      *
      * this version takes a function instead of a direct [View]
@@ -289,6 +466,28 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
      * @param view a function that returns a [View]
      */
     fun column(rowIndex: Int, view: () -> View): Builder = column_(rowIndex, view)
+
+    /**
+     * appends a new [column][column_] to the specified row index
+     *
+     * this version takes a function instead of a direct [View]
+     *
+     * this is useful if you intend to use [Builder.currentColumn] or [Builder.currentRow],
+     * or the same [View] is intended to be used in multiple [columns][column], allowing you to avoid
+     * rebuilding the [View] for each [column] manually, eliminating duplicate code
+     *
+     * since a [View] cannot have more than one [parent][View.getParent], it needs to be reconstructed for each a.view
+     * that it wants to be attached to
+     *
+     * throws [ArrayIndexOutOfBoundsException] if the row is
+     * [empty][MutableList.isEmpty] or [rowIndex] is greater than or equal to
+     * [row.size][MutableList.size]
+     *
+     * @param rowIndex the row number
+     * @param view a function that returns a [View]
+     */
+    fun column(name: String, rowIndex: Int, view: () -> View): Builder =
+        column_(name, rowIndex, view)
 
     /**
      * appends a new [column] to the last added [row]
@@ -317,6 +516,32 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
     fun column(view: View) = column(row.lastIndex, view)
 
     /**
+     * appends a new [column] to the last added [row]
+     *
+     * [Builder.currentColumn] and [Builder.currentRow] CANNOT be used as parameters to a custom [View]'s function
+     * parameters:
+     *
+     * ```
+     * val build = Builder(activity)
+     * build.column(
+     *     1,
+     *     myCustomView(
+     *         // build.currentColumn WILL return null
+     *         height = build.currentColumn!!.sizeFromTop,
+     *         // build.currentColumn WILL return null
+     *         width = build.currentColumn!!.sizeFromLeft
+     *     )
+     * ).build()
+     * ```
+     *
+     * throws [ArrayIndexOutOfBoundsException] if the row is [empty][MutableList.isEmpty]
+     *
+     * @param view the [a.view][View] to attach to this column
+     */
+    @Throws(ArrayIndexOutOfBoundsException::class)
+    fun column(name: String, view: View) = column(name, row.lastIndex, view)
+
+    /**
      * appends a new [column][column_] to the specified row index
      *
      * this version takes a function instead of a direct [View]
@@ -335,11 +560,58 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
     fun column(view: () -> View) = column_(row.lastIndex, view)
 
     /**
+     * appends a new [column][column_] to the specified row index
+     *
+     * this version takes a function instead of a direct [View]
+     *
+     * this is useful if you intend to use [Builder.currentColumn] or [Builder.currentRow],
+     * or the same [View] is intended to be used in multiple [columns][column], allowing you to avoid
+     * rebuilding the [View] for each [column] manually, eliminating duplicate code
+     *
+     * since a [View] cannot have more than one [parent][View.getParent], it needs to be reconstructed for each a.view
+     * that it wants to be attached to
+     *
+     * throws [ArrayIndexOutOfBoundsException] if the row is [empty][MutableList.isEmpty]
+     *
+     * @param view a function that returns a [View]
+     */
+    fun column(view: (Any?) -> View, data: Any?) = column_(row.lastIndex, view, data)
+
+    /**
+     * appends a new [column][column_] to the specified row index
+     *
+     * this version takes a function instead of a direct [View]
+     *
+     * this is useful if you intend to use [Builder.currentColumn] or [Builder.currentRow],
+     * or the same [View] is intended to be used in multiple [columns][column], allowing you to avoid
+     * rebuilding the [View] for each [column] manually, eliminating duplicate code
+     *
+     * since a [View] cannot have more than one [parent][View.getParent], it needs to be reconstructed for each a.view
+     * that it wants to be attached to
+     *
+     * throws [ArrayIndexOutOfBoundsException] if the row is [empty][MutableList.isEmpty]
+     *
+     * @param view a function that returns a [View]
+     */
+    fun column(name: String, view: () -> View) = column_(name, row.lastIndex, view)
+
+    /**
      * adds a new row to the [Builder]
      *
      */
     fun row(): Builder {
         currentRow = Row()
+        row.add(currentRow!!)
+        return this
+    }
+
+    /**
+     * adds a new row to the [Builder]
+     *
+     */
+    fun row(name: String): Builder {
+        currentRow = Row()
+        currentRow!!.name = name
         row.add(currentRow!!)
         return this
     }
@@ -372,6 +644,41 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
                 repeat(columns) {
                     if (invokedFromBuild) addToQueue = false
                     column(i, view)
+                    if (invokedFromBuild) addToQueue = true
+                }
+            }
+        }
+        return this
+    }
+
+    /**
+     * adds a new row to the [Builder]
+     *
+     * this version takes a function instead of a direct [View]
+     *
+     * this is useful if you intend to use [Builder.currentColumn] or [Builder.currentRow],
+     * or the same [View] is intended to be used in multiple [columns][column], allowing you to avoid
+     * rebuilding the [View] for each [column] manually, eliminating duplicate code
+     *
+     * since a [View] cannot have more than one [parent][View.getParent], it needs to be reconstructed for each a.view
+     * that it wants to be attached to
+     *
+     */
+    fun row(rowName: String, columnName: String, columns: Int, view: () -> View): Builder {
+        if (!threaded) {
+            val i = row.size
+            row(rowName)
+            repeat(columns) {
+                column(columnName, i, view)
+            }
+        } else {
+            Log.e("NU", "added column to queue")
+            queue.add {
+                val i = row.size
+                row(rowName)
+                repeat(columns) {
+                    if (invokedFromBuild) addToQueue = false
+                    column(columnName, i, view)
                     if (invokedFromBuild) addToQueue = true
                 }
             }
@@ -515,7 +822,11 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
         build(executeOnUiThreadIfActivityOrViewNotNull, executeOnUiThreadIfActivityOrViewNotNull)
     }
 
-    fun build(executeOnUiThreadIfActivityNotNull: (al: AbsoluteLayout) -> Unit, executeOnUiThreadIfViewNotNull: (al: AbsoluteLayout) -> Unit) {
+    fun build(
+        executeOnUiThreadIfActivityNotNull: (al: AbsoluteLayout) -> Unit,
+        executeOnUiThreadIfViewNotNull: (al: AbsoluteLayout) -> Unit
+    ) {
+        buildView()
         post(executeOnUiThreadIfActivityNotNull, executeOnUiThreadIfViewNotNull)
         executeInNewThread()
     }
@@ -533,7 +844,8 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
             row.forEach {
                 it.column.forEach {
                     absoluteLayout.addView(
-                        it.view, AbsoluteLayout.LayoutParams(
+                        if (it.isView) it.view else if (it.viewfun != null) it.viewfun!!() else if (it.viewfun1 != null) it.viewfun1!!(it.data) else throw RuntimeException(),
+                        AbsoluteLayout.LayoutParams(
                             it.sizeFromLeft,
                             it.sizeFromTop,
                             it.distanceFromLeft,
@@ -544,7 +856,7 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
             }
             return absoluteLayout
         } else {
-            var view: AbsoluteLayout? = null
+            var view_: AbsoluteLayout? = null
             queue.add {
                 resize()
                 if (activity != null) {
@@ -552,7 +864,7 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
                     row.forEach {
                         it.column.forEach {
                             absoluteLayout.addView(
-                                if (it.isView) it.view else it.viewfun!!(),
+                                if (it.isView) it.view else if (it.viewfun != null) it.viewfun!!() else if (it.viewfun1 != null) it.viewfun1!!(it.data) else throw RuntimeException(),
                                 AbsoluteLayout.LayoutParams(
                                     it.sizeFromLeft,
                                     it.sizeFromTop,
@@ -562,7 +874,7 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
                             )
                         }
                     }
-                    view = absoluteLayout
+                    view_ = absoluteLayout
                 } else if (view != null) {
                     val absoluteLayout = AbsoluteLayout(UI!!.context)
                     Log.e("NU", "row.size = ${row.size}")
@@ -574,7 +886,8 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
                             Log.e("NU", "it.distanceFromLeft = ${it.distanceFromLeft}")
                             Log.e("NU", "it.distanceFromTop = ${it.distanceFromTop}")
                             absoluteLayout.addView(
-                                it.view, AbsoluteLayout.LayoutParams(
+                                if (it.isView) it.view else if (it.viewfun != null) it.viewfun!!() else if (it.viewfun1 != null) it.viewfun1!!(it.data) else throw RuntimeException(),
+                                AbsoluteLayout.LayoutParams(
                                     it.sizeFromLeft,
                                     it.sizeFromTop,
                                     it.distanceFromLeft,
@@ -583,7 +896,7 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
                             )
                         }
                     }
-                    view = absoluteLayout
+                    view_ = absoluteLayout
                 } else throw NullPointerException()
             }
             Thread {
@@ -674,8 +987,53 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
                 } catch (e: NullPointerException) {
                     return null
                 }
-                return view
+                return view_
             }
+        }
+    }
+
+    var absoluteLayout: AbsoluteLayout? = null
+
+    fun buildView() {
+        queue.add {
+            resize()
+            if (activity != null) {
+                absoluteLayout = AbsoluteLayout(activity!!.applicationContext)
+                row.forEach {
+                    it.column.forEach {
+                        absoluteLayout!!.addView(
+                            if (it.isView) it.view else if (it.viewfun != null) it.viewfun!!() else if (it.viewfun1 != null) it.viewfun1!!(it.data) else throw RuntimeException(),
+                            AbsoluteLayout.LayoutParams(
+                                it.sizeFromLeft,
+                                it.sizeFromTop,
+                                it.distanceFromLeft,
+                                it.distanceFromTop
+                            )
+                        )
+                    }
+                }
+            } else if (view != null) {
+                absoluteLayout = AbsoluteLayout(UI!!.context)
+                Log.e("NU", "row.size = ${row.size}")
+                row.forEach {
+                    Log.e("NU", "it.column.size = ${it.column.size}")
+                    it.column.forEach {
+                        Log.e("NU", "it.sizeFromLeft = ${it.sizeFromLeft}")
+                        Log.e("NU", "it.sizeFromTop = ${it.sizeFromTop}")
+                        Log.e("NU", "it.distanceFromLeft = ${it.distanceFromLeft}")
+                        Log.e("NU", "it.distanceFromTop = ${it.distanceFromTop}")
+                        absoluteLayout!!.addView(
+                            if (it.isView) it.view else if (it.viewfun != null) it.viewfun!!() else if (it.viewfun1 != null) it.viewfun1!!(it.data) else throw RuntimeException(),
+                            AbsoluteLayout.LayoutParams(
+                                it.sizeFromLeft,
+                                it.sizeFromTop,
+                                it.distanceFromLeft,
+                                it.distanceFromTop
+                            )
+                        )
+                    }
+                }
+            } else throw NullPointerException()
         }
     }
 
@@ -687,37 +1045,69 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
         post(executeOnUiThreadIfActivityOrViewNotNull, executeOnUiThreadIfActivityOrViewNotNull, {})
     }
 
-    fun post(executeOnUiThreadIfActivityOrViewNotNull: (al: AbsoluteLayout) -> Unit, after: (() -> Unit)) {
-        post(executeOnUiThreadIfActivityOrViewNotNull, executeOnUiThreadIfActivityOrViewNotNull, after)
+    fun post(
+        executeOnUiThreadIfActivityOrViewNotNull: (al: AbsoluteLayout) -> Unit,
+        after: (() -> Unit)
+    ) {
+        post(
+            executeOnUiThreadIfActivityOrViewNotNull,
+            executeOnUiThreadIfActivityOrViewNotNull,
+            after
+        )
     }
 
-    fun post(executeOnUiThreadIfActivityNotNull: (al: AbsoluteLayout) -> Unit, executeOnUiThreadIfViewNotNull: (al: AbsoluteLayout) -> Unit) {
+    fun post(
+        executeOnUiThreadIfActivityNotNull: (al: AbsoluteLayout) -> Unit,
+        executeOnUiThreadIfViewNotNull: (al: AbsoluteLayout) -> Unit
+    ) {
         post(executeOnUiThreadIfActivityNotNull, executeOnUiThreadIfViewNotNull, {})
     }
 
-    fun post(executeOnUiThreadIfActivityNotNull: (al: AbsoluteLayout) -> Unit, executeOnUiThreadIfViewNotNull: (al: AbsoluteLayout) -> Unit, after: (() -> Unit)) {
+    fun post(
+        executeOnUiThreadIfActivityNotNull: (al: AbsoluteLayout) -> Unit,
+        executeOnUiThreadIfViewNotNull: (al: AbsoluteLayout) -> Unit,
+        after: (() -> Unit)
+    ) {
+        queue.add {
+            if (activity != null) {
+                activity!!.runOnUiThread {
+                    executeOnUiThreadIfActivityNotNull(absoluteLayout!!)
+                }
+            } else if (view != null) {
+                UI!!.runOnUiThread {
+                    executeOnUiThreadIfViewNotNull(absoluteLayout!!)
+                }
+            } else throw NullPointerException()
+            after()
+        }
+    }
+
+    fun findNamedView(name: String) {}
+
+    fun findAndReplaceNamed(name: String, replacement: View) {
         queue.add {
             resize()
             if (activity != null) {
-                val absoluteLayout = AbsoluteLayout(activity!!.applicationContext)
                 row.forEach {
                     it.column.forEach {
-                        absoluteLayout.addView(
-                            if (it.isView) it.view else it.viewfun!!(),
-                            AbsoluteLayout.LayoutParams(
-                                it.sizeFromLeft,
-                                it.sizeFromTop,
-                                it.distanceFromLeft,
-                                it.distanceFromTop
+                        if (it.name.equals(name)) {
+                            val v: View = if (it.isView) it.view!! else it.viewfun!!()
+                            val al = v.parent as AbsoluteLayout
+                            val index = al.indexOfChild(v)
+                            al.removeViewAt(index)
+                            al.addView(
+                                v, index,
+                                AbsoluteLayout.LayoutParams(
+                                    it.sizeFromLeft,
+                                    it.sizeFromTop,
+                                    it.distanceFromLeft,
+                                    it.distanceFromTop
+                                )
                             )
-                        )
+                        }
                     }
                 }
-                activity!!.runOnUiThread {
-                    executeOnUiThreadIfActivityNotNull(absoluteLayout)
-                }
             } else if (view != null) {
-                val absoluteLayout = AbsoluteLayout(UI!!.context)
                 Log.e("NU", "row.size = ${row.size}")
                 row.forEach {
                     Log.e("NU", "it.column.size = ${it.column.size}")
@@ -726,22 +1116,110 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
                         Log.e("NU", "it.sizeFromTop = ${it.sizeFromTop}")
                         Log.e("NU", "it.distanceFromLeft = ${it.distanceFromLeft}")
                         Log.e("NU", "it.distanceFromTop = ${it.distanceFromTop}")
-                        absoluteLayout.addView(
-                            it.view, AbsoluteLayout.LayoutParams(
+                        if (it.name.equals(name)) {
+                            val al = it.view!!.parent as AbsoluteLayout
+                            val index = al.indexOfChild(it.view!!)
+                            al.removeViewAt(index)
+                            al.addView(
+                                it.view!!, index,
+                                AbsoluteLayout.LayoutParams(
+                                    it.sizeFromLeft,
+                                    it.sizeFromTop,
+                                    it.distanceFromLeft,
+                                    it.distanceFromTop
+                                )
+                            )
+                        }
+                    }
+                }
+            } else throw NullPointerException()
+        }
+    }
+
+    fun replaceView(view: View, replacement: View) {
+        replaceView(view, replacement, null)
+    }
+
+    fun replaceView(view: View, replacement: View, layoutParamsOfView: AbsoluteLayout.LayoutParams?) {
+        val absoluteLayout = view.getParent() as AbsoluteLayout
+        val index = absoluteLayout.indexOfChild(view)
+        absoluteLayout.removeViewAt(index)
+        var x = layoutParamsOfView
+        if (x == null)
+            x = getLayoutParamsOfView(view)!!
+        absoluteLayout.addView(replacement, index, x)
+    }
+
+    fun viewNotFound(): Throwable {
+        return Throwable("the target view could not be found")
+    }
+
+    fun hasView(view: View): Boolean {
+        if (activity != null) {
+            row.forEach {
+                it.column.forEach {
+                    if (it.isView)
+                        if (it.view!! == view)
+                            return true
+                }
+            }
+        } else if (view != null) {
+            Log.e("NU", "row.size = ${row.size}")
+            row.forEach {
+                Log.e("NU", "it.column.size = ${it.column.size}")
+                it.column.forEach {
+                    Log.e("NU", "it.sizeFromLeft = ${it.sizeFromLeft}")
+                    Log.e("NU", "it.sizeFromTop = ${it.sizeFromTop}")
+                    Log.e("NU", "it.distanceFromLeft = ${it.distanceFromLeft}")
+                    Log.e("NU", "it.distanceFromTop = ${it.distanceFromTop}")
+                    if (it.view == view)
+                        return true
+                }
+            }
+        } else {
+            if (absoluteLayout!!.contains(view))
+                return true
+            val absoluteLayout = view.getParent() as AbsoluteLayout
+            val index = absoluteLayout.indexOfChild(view)
+            throw NullPointerException()
+        }
+        return false
+    }
+
+    fun getLayoutParamsOfView(view: View): AbsoluteLayout.LayoutParams? {
+        if (activity != null) {
+            row.forEach {
+                it.column.forEach {
+                    if (it.isView)
+                        if (it.view!! == view)
+                            return AbsoluteLayout.LayoutParams(
                                 it.sizeFromLeft,
                                 it.sizeFromTop,
                                 it.distanceFromLeft,
                                 it.distanceFromTop
                             )
+                }
+            }
+        } else if (view != null) {
+            Log.e("NU", "row.size = ${row.size}")
+            row.forEach {
+                Log.e("NU", "it.column.size = ${it.column.size}")
+                it.column.forEach {
+                    Log.e("NU", "it.sizeFromLeft = ${it.sizeFromLeft}")
+                    Log.e("NU", "it.sizeFromTop = ${it.sizeFromTop}")
+                    Log.e("NU", "it.distanceFromLeft = ${it.distanceFromLeft}")
+                    Log.e("NU", "it.distanceFromTop = ${it.distanceFromTop}")
+                    if (it.view == view)
+                        return AbsoluteLayout.LayoutParams(
+                            it.sizeFromLeft,
+                            it.sizeFromTop,
+                            it.distanceFromLeft,
+                            it.distanceFromTop
                         )
-                    }
                 }
-                UI!!.runOnUiThread {
-                    executeOnUiThreadIfViewNotNull(absoluteLayout)
-                }
-            } else throw NullPointerException()
-            after()
-        }
+            }
+        } else throw NullPointerException()
+        return null
     }
 
     fun execute() {
@@ -903,17 +1381,26 @@ class Builder(var maxHeight: Int?, var maxWidth: Int?) {
                 val rounded = Math.floor(sqrt).toInt()
                 Log.e("convertCellsToValidGrid", "requested: $cells : sqrt             :  $sqrt")
                 Log.e("convertCellsToValidGrid", "requested: $cells : rounded          :  $rounded")
-                Log.e("convertCellsToValidGrid", "requested: $cells : total rows       :  ${currentRow + 1}")
+                Log.e(
+                    "convertCellsToValidGrid",
+                    "requested: $cells : total rows       :  ${currentRow + 1}"
+                )
                 // if rounded is not equal to modulator and rounded is not equal to 1
                 if (rounded != modulator && rounded != 1) {
                     // the grid can be compacted
-                    Log.e("convertCellsToValidGrid", "requested: $cells : converting to ${rounded}x$rounded")
+                    Log.e(
+                        "convertCellsToValidGrid",
+                        "requested: $cells : converting to ${rounded}x$rounded"
+                    )
                     return convertCellsToValidGrid(cells, rounded)
                 } else {
                     // the grid cannot be compacted
                     // print the grid's contents in case anything happens to be incorrect
                     for ((index, it) in row.withIndex()) {
-                        Log.e("convertCellsToValidGrid", "requested: $cells : row $index : columns  :  ${it.columns}")
+                        Log.e(
+                            "convertCellsToValidGrid",
+                            "requested: $cells : row $index : columns  :  ${it.columns}"
+                        )
                     }
                     return row
                 }

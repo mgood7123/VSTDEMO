@@ -2,6 +2,7 @@ package vst.manager;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -10,6 +11,7 @@ import android.view.View;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Stack;
 
 public class VstManager {
 
@@ -197,5 +199,10 @@ public class VstManager {
         if (m.methodInstances == null) m.methodInstances = new ArrayList<>();
         m.methodInstances.add(o);
         return o;
+    }
+
+    public PackageInfo[] getPackages(Activity activity) {
+        Stack<PackageInfo> a = new Helpers.PackageManager(activity).getPackageInfo(".addons.");
+        return (a != null) ? a.toArray(new PackageInfo[0]) : null;
     }
 }

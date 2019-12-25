@@ -20,36 +20,28 @@ import java.util.ArrayList;
 
 import kotlin.Unit;
 import kotlin.jvm.functions.Function1;
+import vst.manager.VstGrid;
 import vst.manager.VstManager;
 import vst.manager.VstUi;
 
 public class MainActivity extends AppCompatActivity {
-    VstManager vst = null;
-    VstUi vstUi = null;
-    Builder UI = null;
-
-    private class MyOnClickListener implements View.OnClickListener {
-        Activity a;
-
-        public void init(Activity b) {
-            a = b;
-        }
-
-        @Override
-        public void onClick(View v) {
-            // save current view for back navigation
-            vstUi.commitView(a, vstUi.vstPicker(a, vst));
-        }
-    }
+    VstManager vstMan;
+    VstUi vstUi;
+    VstGrid vstGrid;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        vst = new VstManager();
+        vstMan = new VstManager();
         vstUi = new VstUi();
+        vstGrid = new VstGrid(this, vstMan, vstUi);
         vstUi.commitView(this, R.layout.main);
-        MyOnClickListener t = new MyOnClickListener();
-        t.init(this);
-        findViewById(R.id.button).setOnClickListener(t);
+        findViewById(R.id.button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // outer this, this@MainActivity in Kotlin
+                vstUi.commitView(MainActivity.this, vstGrid.getView());
+            }
+        });
     }
 }

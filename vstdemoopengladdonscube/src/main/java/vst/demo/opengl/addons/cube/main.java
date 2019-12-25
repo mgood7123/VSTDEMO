@@ -5,6 +5,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -30,10 +31,10 @@ public class main {
     }
 
     // should can we eliminate activity here?
-    public View onViewRequest(Activity mActivity, Context mContext) {
+    public ViewGroup onViewRequest(Context mContext) {
         if (context == null) context = mContext;
 
-        if (n == null) n = new NativeView(activity, context);
+        if (n == null) n = new NativeView(context);
 
         Log.i(n.TAG, "onViewRequest(Activity, Context)");
 
@@ -51,27 +52,23 @@ public class main {
         return rel;
     }
 
-    public void onCreate(Activity mActivity, Context mContext) {
+    public void onCreate(Activity mActivity, ViewGroup rel) {
         if (activity == null) activity = mActivity;
-        if (context == null) context = mContext;
+        RelativeLayout view = (RelativeLayout) rel;
 
-        if (n == null) n = new NativeView(activity, context);
+        if (n == null) n = new NativeView(context);
 
         Log.i(n.TAG, "onCreate()");
 
         // build layout
-        RelativeLayout rel = new RelativeLayout(context);
-        rel.addView(n.surfaceView);
+        view.addView(n.surfaceView);
 
         // set text
         TextView text = new TextView(context);
         text.setText("Hello World! Try clicking the screen");
         text.setTextSize(60f);
         text.setTextColor(Color.WHITE);
-        rel.addView(text);
-
-        // set layout
-        activity.setContentView(rel);
+        view.addView(text);
 
         n.surfaceView.setOnClickListener(new MyListener());
     }

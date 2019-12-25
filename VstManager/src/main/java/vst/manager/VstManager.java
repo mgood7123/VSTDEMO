@@ -155,7 +155,11 @@ public class VstManager {
     }
 
     public Object invokeMethod(VST.CLASS CLASS, Object classInstance, String methodName) throws IllegalArgumentException {
-        return invokeMethod(CLASS, classInstance, methodName, null, null);
+        return invokeMethod(CLASS, classInstance, methodName, (Class[]) null, (Object[]) null);
+    }
+
+    public Object invokeMethod(VST.CLASS CLASS, Object classInstance, String methodName, Class<?> parameterType, Object parameterValue) throws IllegalArgumentException {
+        return invokeMethod(CLASS, classInstance, methodName, new Class[] { parameterType }, new Object[] { parameterValue } );
     }
 
     public Object invokeMethod(VST.CLASS CLASS, Object classInstance, String methodName, Class<?>[] parameterTypes, Object[] parameterValues) throws IllegalArgumentException {
@@ -169,6 +173,7 @@ public class VstManager {
             for (VST.CLASS.Methods METHOD : CLASS.methods)
                 if (METHOD.methodName != null && METHOD.method != null)
                     if (METHOD.methodName.equals(methodName)) {
+                        Log.i("VstManager", "found existing method: " + methodName);
                         m = METHOD;
                         break;
                     }
@@ -184,6 +189,7 @@ public class VstManager {
             m.methodName = methodName;
             if (CLASS.methods == null) CLASS.methods = new ArrayList<>();
             CLASS.methods.add(m);
+            Log.i("VstManager", "added method to methods list: " + methodName);
         }
         Log.i("VstManager", "obtained method: " + methodName);
         Log.i("VstManager", "invoking method: " + methodName);

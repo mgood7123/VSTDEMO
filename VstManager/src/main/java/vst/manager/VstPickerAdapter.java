@@ -7,25 +7,28 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
 
 import vstmanager.R;
 
-public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
-    static String TAG = "MyAdapter";
+public class VstPickerAdapter extends RecyclerView.Adapter<VstPickerAdapter.MyViewHolder> {
+    static String TAG = "VstPickerAdapter";
     private final Activity mActivity;
     private final VstManager mVstMan;
-    private VstUi mVstUI;
+    private final VstUi mVstUi;
+    private final VstGridAdapter mVstGridAdapter;
     private PackageInfo[] mDataset;
 
     // Provide a reference to the views for each data item
     // Complex data items may need more than one view per item, and
     // you provide access to all the views for a data item in a view holder
     public static class MyPreviewViewHolder extends MyViewHolder {
-        static String TAG = "MyAdapter:MyPreviewViewHolder";
+        static String TAG = "VstPickerAdapter:MyPreviewViewHolder";
         public ImageView image;
 
         // each data item is just a string in this case
@@ -42,7 +45,7 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
     // Complex data items may need more than one view per item, and
     // you provide access to all the views for a data item in a view holder
     public static class MyViewHolder extends RecyclerView.ViewHolder {
-        static String TAG = "MyAdapter:MyViewHolder";
+        static String TAG = "VstPickerAdapter:MyViewHolder";
         public Boolean hasPreview = false;
         public TextView title;
 
@@ -55,11 +58,12 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
     }
 
     // Provide a suitable constructor (depends on the kind of dataset)
-    public MyAdapter(Activity activity, VstManager vstMan, VstUi vstUi) {
-        Log.w(TAG, "MyAdapter()");
+    public VstPickerAdapter(Activity activity, VstManager vstMan, VstUi vstUi, VstGridAdapter vstGridAdapter) {
+        Log.w(TAG, "VstPickerAdapter()");
         mActivity = activity;
         mVstMan = vstMan;
-        mVstUI = vstUi;
+        mVstUi = vstUi;
+        mVstGridAdapter = vstGridAdapter;
     }
 
     public void update() {
@@ -68,8 +72,8 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
         notifyDataSetChanged();
     }
 
-    int PACKAGE_TYPE_HAS_NO_PREVIEW = 1;
     int PACKAGE_TYPE_HAS_PREVIEW = 1;
+    int PACKAGE_TYPE_HAS_NO_PREVIEW;
 
     @Override
     public int getItemViewType(final int position) {
@@ -81,11 +85,13 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
     @Override
     public MyViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         Log.w(TAG, "onCreateViewHolder(ViewGroup parent, int viewType)");
-        if (viewType == PACKAGE_TYPE_HAS_NO_PREVIEW)
+        if (viewType == PACKAGE_TYPE_HAS_PREVIEW) {
+            return new MyPreviewViewHolder(LayoutInflater.from(parent.getContext())
+                        .inflate(R.layout.picker_recycler_view_item_with_preview, parent, false));
+        } else {
             return new MyViewHolder(LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.picker_recycler_view_item_without_preview, parent, false));
-        else return new MyPreviewViewHolder(LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.picker_recycler_view_item_with_preview, parent, false));
+        }
     }
 
     // Replace the contents of a view (invoked by the layout manager)
@@ -99,29 +105,26 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
         holder.title.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                VST pkg = mVstMan.loadPackage(mActivity, mDataset[position].packageName, false);
-                VST.CLASS c = mVstMan.loadClass(pkg, "main");
-                Object i = mVstMan.newInstance(c, "main");
-                View r = (View) mVstMan.invokeMethod(
-                        c, i,
-                        "onViewRequest",
-                        new Class[] { Activity.class, Context.class},
-                        new Object[] { pkg.activity, pkg.activityApplicationContext }
+                mVstGridAdapter.pkg = mVstMan.loadPackage(mActivity, mDataset[position].packageName, false);
+                mVstGridAdapter.vstClass = mVstMan.loadClass(mVstGridAdapter.pkg, "main");
+                mVstGridAdapter.vstClassInstance = mVstMan.newInstance(mVstGridAdapter.vstClass, "main");
+                ViewGroup r = (ViewGroup) mVstMan.invokeMethod(
+                        mVstGridAdapter.vstClass, mVstGridAdapter.vstClassInstance,
+                        "onViewRequest", Context.class,
+                        mVstGridAdapter.pkg.activityApplicationContext
                 );
-/*
-                mVstMan.invokeMethod(
-                        c, i,
-                        "onStart",
-                        null,
-                        null
+                RelativeLayout x = new RelativeLayout(mActivity);
+                x.addView(r);
+                mVstGridAdapter.viewList.add(mVstGridAdapter.viewList.size() - 1, x);
+                mVstMan.invokeMethod(mVstGridAdapter.vstClass, mVstGridAdapter.vstClassInstance, "onCreate",
+                        new Class[] { Activity.class, ViewGroup.class},
+                        new Object[] { mVstGridAdapter.pkg.activity, r }
                 );
-                mVstMan.invokeMethod(
-                        c, i,
-                        "onResume",
-                        null,
-                        null
-                );
-*/
+                mVstMan.invokeMethod(mVstGridAdapter.vstClass, mVstGridAdapter.vstClassInstance, "onStart");
+                mVstMan.invokeMethod(mVstGridAdapter.vstClass, mVstGridAdapter.vstClassInstance, "onResume");
+                mVstGridAdapter.notifyItemRangeChanged(mVstGridAdapter.viewList.size() - 2, mVstGridAdapter.viewList.size() - 1);
+                mVstUi.commitView(mActivity, x);
+//                mVstUi.undoCommitView(mActivity);
             }
         });
     }

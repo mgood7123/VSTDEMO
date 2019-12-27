@@ -91,7 +91,7 @@ public class VstGridAdapter extends RecyclerView.Adapter<VstGridAdapter.MyViewHo
             LinearLayout x = new LinearLayout(mActivity);
             x.addView(
                     (ViewGroup) viewList.get(viewType),
-                    new ViewGroup.LayoutParams(500, 500)
+                    new ViewGroup.LayoutParams(1000, 1000)
             );
             return new MyViewHolder(x);
         } else {

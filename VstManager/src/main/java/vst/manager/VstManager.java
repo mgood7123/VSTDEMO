@@ -17,6 +17,9 @@ public class VstManager {
 
     private String ADDONS = ".addons.";
 
+    public VST loadPackage(Activity activity, String vstName) throws IllegalArgumentException {
+        return loadPackage(activity, vstName, true);
+    }
     public VST loadPackage(Activity activity, String vstName, Boolean vstNameIsRelativeToActiveApplicationPackageName) throws IllegalArgumentException {
         if (activity == null) throw new IllegalArgumentException("activity must not be null");
         if (vstName == null) throw new IllegalArgumentException("vstName must not be null");
@@ -109,12 +112,12 @@ public class VstManager {
         if (className == null) throw new IllegalArgumentException("className must not be null");
         Log.i("VstManager", "loading class: " + vst.VST + "." + className);
         // check for an existing class
-        if (vst.classes != null) {
-            for (VST.CLASS CLASS : vst.classes)
-                if (CLASS.className.equals(className)) {
-                    return CLASS;
-                }
-        }
+//        if (vst.classes != null) {
+//            for (VST.CLASS CLASS : vst.classes)
+//                if (CLASS.className.equals(className)) {
+//                    return CLASS;
+//                }
+//        }
         Class<?> c;
         try {
             // TODO: we would probably better to hardcode this, to say vst.main
@@ -167,16 +170,16 @@ public class VstManager {
         if (classInstance == null) throw new IllegalArgumentException("classInstance must not be null");
         if (methodName == null) throw new IllegalArgumentException("methodName must not be null");
         Log.i("VstManager", "obtaining method: " + methodName);
-        // check for an existing method
         VST.CLASS.Methods m = null;
-        if (CLASS.methods != null)
-            for (VST.CLASS.Methods METHOD : CLASS.methods)
-                if (METHOD.methodName != null && METHOD.method != null)
-                    if (METHOD.methodName.equals(methodName)) {
-                        Log.i("VstManager", "found existing method: " + methodName);
-                        m = METHOD;
-                        break;
-                    }
+//        // check for an existing method
+//        if (CLASS.methods != null)
+//            for (VST.CLASS.Methods METHOD : CLASS.methods)
+//                if (METHOD.methodName != null && METHOD.method != null)
+//                    if (METHOD.methodName.equals(methodName)) {
+//                        Log.i("VstManager", "found existing method: " + methodName);
+//                        m = METHOD;
+//                        break;
+//                    }
         if (m == null) {
             m = new VST.CLASS.Methods();
             try {

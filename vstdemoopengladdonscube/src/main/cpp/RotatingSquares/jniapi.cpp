@@ -74,6 +74,7 @@ extern "C" JNIEXPORT void JNICALL Java_vst_demo_opengl_addons_cube_NativeView_na
         renderer->setWindow(window);
     } else {
         LOG_INFO("Releasing window");
+//        renderer->stop();
         ANativeWindow_release(window);
     }
 }

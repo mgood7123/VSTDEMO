@@ -138,7 +138,7 @@ void Renderer::renderLoop()
         if (_display) {
             drawFrame();
             if (!eglSwapBuffers(_display, _surface)) {
-                LOG_ERROR("eglSwapBuffers() returned error %d", eglGetError());
+//                LOG_ERROR("eglSwapBuffers() returned error %d", eglGetError());
             }
         }
         

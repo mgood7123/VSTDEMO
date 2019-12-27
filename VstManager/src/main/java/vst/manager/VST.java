@@ -17,7 +17,7 @@ public class VST {
         public ArrayList<Object> ClassInstances = null;
         public static class Methods {
             String methodName = null;
-            Method method = null;
+            public Method method = null;
             public ArrayList<Object> methodInstances = null;
         }
         public ArrayList<Methods> methods = null;

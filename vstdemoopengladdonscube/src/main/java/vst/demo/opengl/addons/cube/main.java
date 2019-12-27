@@ -30,7 +30,6 @@ public class main {
         }
     }
 
-    // should can we eliminate activity here?
     public ViewGroup onViewRequest(Context mContext) {
         if (context == null) context = mContext;
 
@@ -54,22 +53,7 @@ public class main {
 
     public void onCreate(Activity mActivity, ViewGroup rel) {
         if (activity == null) activity = mActivity;
-        RelativeLayout view = (RelativeLayout) rel;
-
-        if (n == null) n = new NativeView(context);
-
         Log.i(n.TAG, "onCreate()");
-
-        // build layout
-        view.addView(n.surfaceView);
-
-        // set text
-        TextView text = new TextView(context);
-        text.setText("Hello World! Try clicking the screen");
-        text.setTextSize(60f);
-        text.setTextColor(Color.WHITE);
-        view.addView(text);
-
         n.surfaceView.setOnClickListener(new MyListener());
     }
 

@@ -1,26 +1,16 @@
 package vst.manager;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.AbsoluteLayout;
-import android.widget.Button;
 import android.widget.LinearLayout;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.liblayout.Builder;
-import com.example.liblayout.BuilderKt;
-import com.example.liblayout.UiThread;
 
-import java.util.Stack;
-
-import kotlin.Triple;
-import kotlin.Unit;
-import kotlin.jvm.functions.Function1;
 import vst.manager.Helpers.ViewStack;
 import vstmanager.R;
 

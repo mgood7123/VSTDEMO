@@ -27,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
 
         // INSTANCE ONE
 
-            // new context
+            // new context, needed in order to obtain a class loader
             VST vst0 = new VST(); vst0.activity = this; vst0.activityApplicationContext = vst0.activity.getApplicationContext(); vst0.VST = getPackageName(); try { vst0.context = vst0.activityApplicationContext.createPackageContext(vst0.VST, Context.CONTEXT_INCLUDE_CODE | Context.CONTEXT_IGNORE_SECURITY); } catch (PackageManager.NameNotFoundException e) { e.printStackTrace(); }
 
             // load class
@@ -42,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
 
         // INSTANCE TWO
 
-            // new context
+            // new context, needed in order to obtain a class loader
             VST vst1 = new VST(); vst1.activity = this; vst1.activityApplicationContext = vst1.activity.getApplicationContext(); vst1.VST = getPackageName(); try { vst1.context = vst1.activityApplicationContext.createPackageContext(vst1.VST, Context.CONTEXT_INCLUDE_CODE | Context.CONTEXT_IGNORE_SECURITY); } catch (PackageManager.NameNotFoundException e) { e.printStackTrace(); }
 
             // load class

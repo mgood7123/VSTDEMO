@@ -24,9 +24,16 @@
 
 #define LOG_TAG "EglSample"
 
+// LIBRARIES ARE GLOBALLY LOADED.
 
-static ANativeWindow *window = nullptr;
-static Renderer *renderer = nullptr;
+// THE JVM NEVER LOADS MORE THAN ONE INSTANCE OF A LIBRARY INTO THE SAME ANDROID PROCESS
+// AS A RESULT, NEW INSTANCES OF A LIBRARY CANNOT BE CREATED EASILY
+
+// AND THUS LIBRARIES ARE RECOMMENDED TO BE MADE RE-ENTRANT
+
+
+ANativeWindow *window = nullptr;
+Renderer *renderer = nullptr;
 
 extern "C" JNIEXPORT void JNICALL Java_vst_demo_opengl_addons_cube_NativeView_nativeOnStart(JNIEnv* jenv,
                                                                                        jclass type)
@@ -74,7 +81,6 @@ extern "C" JNIEXPORT void JNICALL Java_vst_demo_opengl_addons_cube_NativeView_na
         renderer->setWindow(window);
     } else {
         LOG_INFO("Releasing window");
-//        renderer->stop();
         ANativeWindow_release(window);
     }
 }

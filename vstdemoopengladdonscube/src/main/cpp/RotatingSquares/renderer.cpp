@@ -48,7 +48,7 @@ static GLint colors[][4] = {
     { 0x00000, 0x10000, 0x10000, 0x10000 }
 };
 
-GLubyte indices[] = {
+static GLubyte indices[] = {
     0, 4, 5,    0, 5, 1,
     1, 5, 6,    1, 6, 2,
     2, 6, 7,    2, 7, 3,

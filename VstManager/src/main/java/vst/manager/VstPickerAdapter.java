@@ -123,8 +123,7 @@ public class VstPickerAdapter extends RecyclerView.Adapter<VstPickerAdapter.MyVi
                 mVstMan.invokeMethod(mVstGridAdapter.vstClass, mVstGridAdapter.vstClassInstance, "onStart");
                 mVstMan.invokeMethod(mVstGridAdapter.vstClass, mVstGridAdapter.vstClassInstance, "onResume");
                 mVstGridAdapter.notifyItemRangeChanged(mVstGridAdapter.viewList.size() - 2, mVstGridAdapter.viewList.size() - 1);
-                mVstUi.commitView(mActivity, x);
-//                mVstUi.undoCommitView(mActivity);
+                mVstUi.undoCommitView(mActivity);
             }
         });
     }

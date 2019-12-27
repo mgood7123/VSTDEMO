@@ -1,10 +1,14 @@
 package vst.manager;
 
 import android.app.Activity;
+import android.content.Context;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.RecyclerView;
@@ -84,7 +88,12 @@ public class VstGridAdapter extends RecyclerView.Adapter<VstGridAdapter.MyViewHo
         Log.w(TAG, "onCreateViewHolder(ViewGroup parent, int viewType)");
         if (!isEnd(viewType)) {
             // isStart
-            return new MyViewHolder((ViewGroup) viewList.get(viewType));
+            LinearLayout x = new LinearLayout(mActivity);
+            x.addView(
+                    (ViewGroup) viewList.get(viewType),
+                    new ViewGroup.LayoutParams(500, 500)
+            );
+            return new MyViewHolder(x);
         } else {
             // isEnd
             // TODO: cache this

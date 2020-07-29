@@ -18,13 +18,14 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <android/native_window.h> // requires ndk r5 or newer
-#include <EGL/egl.h> // requires ndk r5 or newer
-#include <GLES/gl.h>
+#include <string>
 
 #include "logger.h"
 #include "renderer.h"
 
 #define LOG_TAG "EglSample"
+
+#include "glis_minimal.h"
 
 static GLint vertices[][3] = {
     { -0x10000, -0x10000, -0x10000 },
@@ -59,25 +60,22 @@ static GLubyte indices[] = {
 
 
 Renderer::Renderer()
-    : _msg(MSG_NONE), _display(0), _surface(0), _context(0), _angle(0)
+    : _msg(MSG_NONE), _angle(0)
 {
     LOG_INFO("Renderer instance created");
     pthread_mutex_init(&_mutex, 0);    
-    return;
 }
 
 Renderer::~Renderer()
 {
     LOG_INFO("Renderer instance destroyed");
     pthread_mutex_destroy(&_mutex);
-    return;
 }
 
 void Renderer::start()
 {
     LOG_INFO("Creating renderer thread");
     pthread_create(&_threadId, 0, threadStartCallback, this);
-    return;
 }
 
 void Renderer::stop()
@@ -91,8 +89,6 @@ void Renderer::stop()
 
     pthread_join(_threadId, 0);
     LOG_INFO("Renderer thread stopped");
-
-    return;
 }
 
 void Renderer::setWindow(ANativeWindow *window)
@@ -100,10 +96,8 @@ void Renderer::setWindow(ANativeWindow *window)
     // notify render thread that window has changed
     pthread_mutex_lock(&_mutex);
     _msg = MSG_WINDOW_SET;
-    _window = window;
+    g.native_window = window;
     pthread_mutex_unlock(&_mutex);
-
-    return;
 }
 
 
@@ -136,89 +130,19 @@ void Renderer::renderLoop()
         _msg = MSG_NONE;
         pthread_mutex_unlock(&_mutex);
 
-        if (_display) {
+        if (g.display) {
             drawFrame();
-            eglSwapBuffers(_display, _surface);
+            eglSwapBuffers(g.display, g.surface);
         }
     }
     
     LOG_INFO("Render loop exits");
-    
-    return;
 }
 
 bool Renderer::initialize()
 {
-    const EGLint attribs[] = {
-        EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-        EGL_BLUE_SIZE, 8,
-        EGL_GREEN_SIZE, 8,
-        EGL_RED_SIZE, 8,
-        EGL_NONE
-    };
-    EGLDisplay display;
-    EGLConfig config;    
-    EGLint numConfigs;
-    EGLint format;
-    EGLSurface surface;
-    EGLContext context;
-    EGLint width;
-    EGLint height;
+    GLIS_setupOnScreenRendering(g);
     GLfloat ratio;
-    
-    LOG_INFO("Initializing context");
-    
-    if ((display = eglGetDisplay(EGL_DEFAULT_DISPLAY)) == EGL_NO_DISPLAY) {
-        LOG_ERROR("eglGetDisplay() returned error %d", eglGetError());
-        return false;
-    }
-    if (!eglInitialize(display, 0, 0)) {
-        LOG_ERROR("eglInitialize() returned error %d", eglGetError());
-        return false;
-    }
-
-    if (!eglChooseConfig(display, attribs, &config, 1, &numConfigs)) {
-        LOG_ERROR("eglChooseConfig() returned error %d", eglGetError());
-        destroy();
-        return false;
-    }
-
-    if (!eglGetConfigAttrib(display, config, EGL_NATIVE_VISUAL_ID, &format)) {
-        LOG_ERROR("eglGetConfigAttrib() returned error %d", eglGetError());
-        destroy();
-        return false;
-    }
-
-    ANativeWindow_setBuffersGeometry(_window, 0, 0, format);
-
-    if (!(surface = eglCreateWindowSurface(display, config, _window, 0))) {
-        LOG_ERROR("eglCreateWindowSurface() returned error %d", eglGetError());
-        destroy();
-        return false;
-    }
-    
-    if (!(context = eglCreateContext(display, config, 0, 0))) {
-        LOG_ERROR("eglCreateContext() returned error %d", eglGetError());
-        destroy();
-        return false;
-    }
-    
-    if (!eglMakeCurrent(display, surface, surface, context)) {
-        LOG_ERROR("eglMakeCurrent() returned error %d", eglGetError());
-        destroy();
-        return false;
-    }
-
-    if (!eglQuerySurface(display, surface, EGL_WIDTH, &width) ||
-        !eglQuerySurface(display, surface, EGL_HEIGHT, &height)) {
-        LOG_ERROR("eglQuerySurface() returned error %d", eglGetError());
-        destroy();
-        return false;
-    }
-
-    _display = display;
-    _surface = surface;
-    _context = context;
 
     glDisable(GL_DITHER);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
@@ -227,9 +151,9 @@ bool Renderer::initialize()
     glShadeModel(GL_SMOOTH);
     glEnable(GL_DEPTH_TEST);
     
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, g.width, g.height);
 
-    ratio = (GLfloat) width / height;
+    ratio = (GLfloat) g.width / (GLfloat) g.height;
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glFrustumf(-ratio, ratio, -1, 1, 1, 10);
@@ -238,18 +162,7 @@ bool Renderer::initialize()
 }
 
 void Renderer::destroy() {
-    LOG_INFO("Destroying context");
-
-    eglMakeCurrent(_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-    eglDestroyContext(_display, _context);
-    eglDestroySurface(_display, _surface);
-    eglTerminate(_display);
-    
-    _display = EGL_NO_DISPLAY;
-    _surface = EGL_NO_SURFACE;
-    _context = EGL_NO_CONTEXT;
-
-    return;
+    GLIS_destroy_GLIS(g);
 }
 
 void Renderer::drawFrame()

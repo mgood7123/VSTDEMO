@@ -20,6 +20,7 @@
 #include <pthread.h>
 #include <EGL/egl.h> // requires ndk r5 or newer
 #include <GLES/gl.h>
+#include "glis_minimal.h"
 
 
 class Renderer {
@@ -27,6 +28,8 @@ class Renderer {
 public:
     Renderer();
     virtual ~Renderer();
+
+    GLIS_CLASS g;
 
     // Following methods can be called from any thread.
     // They send message to render thread which executes required actions.
@@ -50,9 +53,6 @@ private:
     // android window, supported by NDK r5 and newer
     ANativeWindow* _window;
 
-    EGLDisplay _display;
-    EGLSurface _surface;
-    EGLContext _context;
     GLfloat _angle;
     
     // RenderLoop is called in a rendering thread started in start() method

@@ -134,15 +134,12 @@ void Renderer::renderLoop()
                 break;
         }
         _msg = MSG_NONE;
-        
+        pthread_mutex_unlock(&_mutex);
+
         if (_display) {
             drawFrame();
-            if (!eglSwapBuffers(_display, _surface)) {
-//                LOG_ERROR("eglSwapBuffers() returned error %d", eglGetError());
-            }
+            eglSwapBuffers(_display, _surface);
         }
-        
-        pthread_mutex_unlock(&_mutex);
     }
     
     LOG_INFO("Render loop exits");

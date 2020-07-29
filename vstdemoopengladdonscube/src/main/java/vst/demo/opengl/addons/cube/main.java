@@ -30,11 +30,8 @@ public class main {
         }
     }
 
+    // aquire the view
     public ViewGroup onViewRequest(Context mContext) {
-        if (context == null) context = mContext;
-
-        if (n == null) n = new NativeView(context);
-
         Log.i(n.TAG, "onViewRequest(Activity, Context)");
 
         // build layout
@@ -51,8 +48,16 @@ public class main {
         return rel;
     }
 
-    public void onCreate(Activity mActivity, ViewGroup rel) {
+    // release the view
+    public void onViewDestroy(Context mContext) {
+        Log.i(n.TAG, "onViewDestroy(Context, ViewGroup)");
+    }
+
+    public void onCreate(Activity mActivity) {
         if (activity == null) activity = mActivity;
+        if (context == null) context = activity;
+        if (n == null) n = new NativeView(context);
+
         Log.i(n.TAG, "onCreate()");
         n.surfaceView.setOnClickListener(new MyListener());
     }
@@ -68,5 +73,10 @@ public class main {
     }
     public void onStop() {
         NativeView.nativeOnStop();
+    }
+    public void onDestroy() {
+        activity = null;
+        context = null;
+        n = null;
     }
 }

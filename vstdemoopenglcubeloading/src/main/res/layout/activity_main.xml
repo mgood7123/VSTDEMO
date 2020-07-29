@@ -7,31 +7,51 @@
     tools:context=".MainActivity">
 
     <Button
+        android:id="@+id/aquireLoop"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:text="auto load/unload cube ON"
+        app:layout_constraintBottom_toTopOf="@id/releaseLoop"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/LINEARLAYOUT" />
+
+    <Button
+        android:id="@+id/releaseLoop"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:text="auto load/unload cube OFF"
+        app:layout_constraintBottom_toTopOf="@id/aquire"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/aquireLoop" />
+
+    <Button
         android:id="@+id/aquire"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:text="load cube"
+        android:text="load cube (turn 'auto load/unload cube' off before using this)"
         app:layout_constraintBottom_toTopOf="@id/release"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/l" />
+        app:layout_constraintTop_toBottomOf="@id/releaseLoop" />
 
     <Button
         android:id="@+id/release"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:text="unload cube"
+        android:text="unload cube (turn 'auto load/unload cube' off before using this)"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/aquire" />
 
     <LinearLayout
-        android:id="@+id/l"
+        android:id="@+id/LINEARLAYOUT"
         android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_height="400dp"
         android:orientation="vertical"
-        app:layout_constraintBottom_toTopOf="@id/aquire"
+        app:layout_constraintBottom_toTopOf="@id/aquireLoop"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"/>

@@ -26,7 +26,7 @@ public class NativeView {
     SurfaceHolderCallback surfaceHolderCallback = null;
 
     public NativeView(Context context) {
-        System.loadLibrary("nativeegl");
+        System.loadLibrary("cube");
         surfaceHolderCallback = new SurfaceHolderCallback();
         surfaceView = new View(surfaceHolderCallback, context);
     }

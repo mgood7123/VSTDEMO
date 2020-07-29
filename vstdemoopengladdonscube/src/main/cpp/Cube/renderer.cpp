@@ -23,9 +23,7 @@
 #include "logger.h"
 #include "renderer.h"
 
-#define LOG_TAG "EglSample"
-
-#include "glis_minimal.h"
+#define LOG_TAG "Cube"
 
 static GLint vertices[][3] = {
     { -0x10000, -0x10000, -0x10000 },
@@ -63,7 +61,7 @@ Renderer::Renderer()
     : _msg(MSG_NONE), _angle(0)
 {
     LOG_INFO("Renderer instance created");
-    pthread_mutex_init(&_mutex, 0);
+    pthread_mutex_init(&_mutex, 0);    
 }
 
 Renderer::~Renderer()
@@ -81,12 +79,10 @@ void Renderer::start()
 void Renderer::stop()
 {
     LOG_INFO("Stopping renderer thread");
-
     // send message to render thread to stop rendering
     pthread_mutex_lock(&_mutex);
     _msg = MSG_RENDER_LOOP_EXIT;
     pthread_mutex_unlock(&_mutex);
-
     pthread_join(_threadId, 0);
     LOG_INFO("Renderer thread stopped");
 }
@@ -130,34 +126,18 @@ void Renderer::renderLoop()
         _msg = MSG_NONE;
         pthread_mutex_unlock(&_mutex);
 
-        if (g.display) {
+        if (g.display != EGL_NO_DISPLAY) {
             drawFrame();
             eglSwapBuffers(g.display, g.surface);
         }
     }
-
+    
     LOG_INFO("Render loop exits");
 }
 
 bool Renderer::initialize()
 {
     GLIS_setupOnScreenRendering(g);
-    GLfloat ratio;
-
-    glDisable(GL_DITHER);
-    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
-    glClearColor(0, 0, 0, 0);
-    glEnable(GL_CULL_FACE);
-    glShadeModel(GL_SMOOTH);
-    glEnable(GL_DEPTH_TEST);
-
-    glViewport(0, 0, g.width, g.height);
-
-    ratio = (GLfloat) g.width / (GLfloat) g.height;
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glFrustumf(-ratio, ratio, -1, 1, 1, 10);
-
     return true;
 }
 
@@ -167,23 +147,7 @@ void Renderer::destroy() {
 
 void Renderer::drawFrame()
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    glTranslatef(0, 0, -3.0f);
-    glRotatef(_angle, 0, 1, 0);
-    glRotatef(_angle*0.25f, 1, 0, 0);
-
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_COLOR_ARRAY);
-
-    glFrontFace(GL_CW);
-    glVertexPointer(3, GL_FIXED, 0, vertices);
-    glColorPointer(4, GL_FIXED, 0, colors);
-    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_BYTE, indices);
-
-    _angle += 1.2f;
+    // no-op
 }
 
 void* Renderer::threadStartCallback(void *myself)
@@ -192,7 +156,7 @@ void* Renderer::threadStartCallback(void *myself)
 
     renderer->renderLoop();
     pthread_exit(0);
-
+    
     return 0;
 }
 
